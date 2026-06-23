@@ -1,0 +1,5 @@
+# Wrangler config for deploying the Slack proxy worker.
+# Deploy with:  cd cloudflare && npx wrangler deploy
+name = "watermelon-slack-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
