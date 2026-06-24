@@ -43,8 +43,15 @@ export function buildReport({
       events: dayEvents,
       messages: dayMessages,
     })
-    return { dateKey, blocks }
+    // Expose the per-day events/messages so insight computations (top time
+    // consumers, first message, etc.) don't need to re-fetch or re-filter.
+    return { dateKey, blocks, events: dayEvents, messages: dayMessages }
   })
 
-  return { days, summary: summarise(days.flatMap((d) => d.blocks)) }
+  return {
+    days,
+    summary: summarise(days.flatMap((d) => d.blocks)),
+    events,
+    messages,
+  }
 }
