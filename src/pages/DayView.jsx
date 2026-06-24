@@ -2,7 +2,7 @@
 // day stat cards. Reached by clicking a day on the dashboard.
 
 import { useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import DayTimeline from '../components/DayTimeline.jsx'
 import DayStats from '../components/DayStats.jsx'
 import CategoryLegend from '../components/CategoryLegend.jsx'
@@ -17,6 +17,9 @@ import { fromDateKey } from '../utils/time.js'
 export default function DayView() {
   const { dateKey } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const tab = searchParams.get('tab')
+  const backTo = tab ? `/?tab=${tab}` : '/'
   const { workingHoursStart, workingHoursEnd } = getSettings()
 
   const { loading, error, day, dayInsight, reload } = useDayReport(dateKey)
@@ -31,12 +34,13 @@ export default function DayView() {
     [dateKey],
   )
 
-  const goToDay = (direction) => navigate(`/day/${navigateDay(dateKey, direction)}`)
+  const dayHref = (key) => `/day/${key}${tab ? `?tab=${tab}` : ''}`
+  const goToDay = (direction) => navigate(dayHref(navigateDay(dateKey, direction)))
 
   return (
     <section>
       <div className="day-view__head">
-        <button className="back-link" onClick={() => navigate('/')}>
+        <button className="back-link" onClick={() => navigate(backTo)}>
           ‹ Back to dashboard
         </button>
         <div className="week-nav">

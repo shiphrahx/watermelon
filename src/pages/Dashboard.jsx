@@ -1,26 +1,41 @@
-// Dashboard: weekly summary sentence, five insight cards, and insight panels.
-// Defaults to "this week" and supports presets, custom range, and week nav.
+// Dashboard: four insight tabs sharing one date range, week navigation, and
+// weekly summary sentence. The active tab is persisted in the URL so it survives
+// date-range changes and round-trips to the day view.
 
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import RangePicker from '../components/RangePicker.jsx'
-import InsightCards from '../components/InsightCards.jsx'
-import TimeBreakdown from '../components/panels/TimeBreakdown.jsx'
-import FocusWindows from '../components/panels/FocusWindows.jsx'
-import TopConsumers from '../components/panels/TopConsumers.jsx'
-import FocusByDay from '../components/panels/FocusByDay.jsx'
+import TabBar, { TABS } from '../components/TabBar.jsx'
+import OverviewTab from '../components/tabs/OverviewTab.jsx'
+import MeetingsTab from '../components/tabs/MeetingsTab.jsx'
+import FocusTab from '../components/tabs/FocusTab.jsx'
+import MessagingTab from '../components/tabs/MessagingTab.jsx'
 import { SkeletonCards, SkeletonPanel } from '../components/Skeleton.jsx'
 import ErrorState from '../components/ErrorState.jsx'
 import { useDashboardData } from '../hooks/useProductivityData.js'
 import { weeklySummarySentence } from '../analysis/insights.js'
 import { RANGE_PRESETS, thisWeekRange, navigateWeek } from '../utils/ranges.js'
 
+const VALID_TABS = TABS.map((t) => t.id)
+
 export default function Dashboard() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = VALID_TABS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'overview'
+
   const [presetId, setPresetId] = useState('this-week')
   const [range, setRange] = useState(() => thisWeekRange(new Date()))
 
-  const { loading, error, insights, trends, reload } = useDashboardData(range)
+  const { loading, error, insights, trends, days, workingStart, workingEnd, reload } =
+    useDashboardData(range)
+
+  function setTab(id) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('tab', id)
+      return next
+    })
+  }
 
   function handlePreset(id) {
     setPresetId(id)
@@ -28,21 +43,21 @@ export default function Dashboard() {
     if (preset?.range) setRange(preset.range(new Date()))
   }
 
-  function handleNavigateWeek(direction) {
-    setRange((r) => navigateWeek(r, direction))
-  }
-
-  function handleCustomRange(next) {
+  const handleNavigateWeek = (direction) => setRange((r) => navigateWeek(r, direction))
+  const handleCustomRange = (next) => {
     setPresetId('custom')
     setRange(next)
   }
 
-  const selectDay = (dateKey) => navigate(`/day/${dateKey}`)
+  const selectDay = (dateKey) => navigate(`/day/${dateKey}?tab=${tab}`)
+  const goToDayView = () => navigate(`/day/${range.endKey}?tab=${tab}`)
 
   const sentence = useMemo(
     () => (insights ? weeklySummarySentence(insights) : null),
     [insights],
   )
+
+  const tabProps = { insights, trends, days, workingStart, workingEnd, onSelectDay: selectDay }
 
   return (
     <section>
@@ -56,6 +71,8 @@ export default function Dashboard() {
           onCustomRange={handleCustomRange}
         />
       </div>
+
+      <TabBar active={tab} onChange={setTab} onDayView={goToDayView} />
 
       {loading && (
         <>
@@ -74,14 +91,10 @@ export default function Dashboard() {
         <>
           <p className="summary-sentence">{sentence}</p>
 
-          <InsightCards insights={insights} trends={trends} />
-
-          <div className="panels">
-            <TimeBreakdown perDay={insights.perDay} onSelectDay={selectDay} />
-            <FocusWindows focusWindows={insights.focusWindows} />
-            <TopConsumers topConsumers={insights.topConsumers} />
-            <FocusByDay focusByDay={insights.focusByDay} onSelectDay={selectDay} />
-          </div>
+          {tab === 'overview' && <OverviewTab {...tabProps} />}
+          {tab === 'meetings' && <MeetingsTab {...tabProps} />}
+          {tab === 'focus' && <FocusTab {...tabProps} />}
+          {tab === 'messaging' && <MessagingTab {...tabProps} />}
         </>
       )}
     </section>
