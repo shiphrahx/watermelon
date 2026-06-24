@@ -3,6 +3,7 @@
 // navigates to its day view.
 
 import Panel from '../Panel.jsx'
+import CategoryLegend from '../CategoryLegend.jsx'
 import { CATEGORIES, CATEGORY_LABELS, CATEGORY_COLORS } from '../../analysis/classify.js'
 import { formatDuration } from '../../utils/time.js'
 
@@ -30,7 +31,7 @@ function StackedBar({ day }) {
   )
 }
 
-export default function TimeBreakdown({ perDay = [], onSelectDay }) {
+export default function TimeBreakdown({ perDay = [], onSelectDay, qualityLabels = {} }) {
   const anyData = perDay.some((d) => d.hasData && d.isWeekday)
   return (
     <Panel
@@ -49,11 +50,15 @@ export default function TimeBreakdown({ perDay = [], onSelectDay }) {
               ) : (
                 day.weekday
               )}
+              {qualityLabels[day.dateKey] && (
+                <span className="day-tag">{qualityLabels[day.dateKey]}</span>
+              )}
             </span>
             <StackedBar day={day} />
           </div>
         ))}
       </div>
+      <CategoryLegend />
     </Panel>
   )
 }
