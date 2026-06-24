@@ -1,71 +1,96 @@
-// Hook that fetches calendar + message data for a date range and runs the
-// classification, returning per-day classified blocks plus an aggregate
-// summary. Works with whichever connections are available (MS, Slack, both).
+// Data hooks for the dashboard and day view, built on the shared loadReport.
+//
+//  useDashboardData(range) — current + previous-week reports, insights & trends.
+//  useDayReport(dateKey)   — a single day's report and day-scoped insight.
 
 import { useCallback, useEffect, useState } from 'react'
-import {
-  USE_MOCK,
-  getCalendarEvents,
-  getTeamsMessages,
-  getSlackMessages,
-} from '../mock/index.js'
-import { isMicrosoftConnected } from '../auth/microsoft.js'
-import { isSlackConnected } from '../auth/slack.js'
-import { buildReport } from '../analysis/report.js'
+import { loadReport, NoConnectionError } from '../data/loadReport.js'
 import { getSettings } from '../utils/settings.js'
+import { previousWeekRange } from '../utils/ranges.js'
+import {
+  computeInsights,
+  computeTrends,
+  computeDayInsight,
+} from '../analysis/insights.js'
 
-export function useProductivityData(startKey, endKey) {
-  const [loading, setLoading] = useState(false)
+const GENERIC_ERROR = "Couldn't load this data. Check your connection and try again."
+
+function messageFor(err) {
+  return err instanceof NoConnectionError ? err.message : GENERIC_ERROR
+}
+
+export function useDashboardData(range) {
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [days, setDays] = useState([]) // [{ dateKey, blocks }]
-  const [summary, setSummary] = useState(null)
+  const [data, setData] = useState(null)
 
   const load = useCallback(async () => {
-    if (!startKey || !endKey) return
-
-    const useMicrosoft = USE_MOCK || isMicrosoftConnected()
-    const useSlack = USE_MOCK || isSlackConnected()
-    if (!useMicrosoft && !useSlack) {
-      setError('Connect Microsoft or Slack in Settings to see your report.')
-      setDays([])
-      setSummary(null)
-      return
-    }
-
+    if (!range?.startKey || !range?.endKey) return
     setLoading(true)
     setError(null)
     try {
       const { workingHoursStart, workingHoursEnd } = getSettings()
+      const prev = previousWeekRange(range)
 
-      // Fetch raw API-shaped data through the mock/real data router. In mock
-      // mode both calendar + Teams resolve from the mock layer; otherwise they
-      // depend on which account is connected.
-      const rawCalendar = useMicrosoft ? await getCalendarEvents(startKey, endKey) : []
-      const rawTeams = useMicrosoft ? await getTeamsMessages(startKey, endKey) : []
-      const rawSlack = useSlack ? await getSlackMessages(startKey, endKey) : []
+      const [report, prevReport] = await Promise.all([
+        loadReport(range.startKey, range.endKey),
+        loadReport(prev.startKey, prev.endKey),
+      ])
 
-      const { days: classifiedDays, summary: total } = buildReport({
-        startKey,
-        endKey,
+      const insights = computeInsights({
+        days: report.days,
         workingStart: workingHoursStart,
         workingEnd: workingHoursEnd,
-        rawCalendar,
-        rawTeams,
-        rawSlack,
       })
+      const prevInsights = computeInsights({
+        days: prevReport.days,
+        workingStart: workingHoursStart,
+        workingEnd: workingHoursEnd,
+      })
+      const trends = computeTrends(insights, prevInsights)
 
-      setDays(classifiedDays)
-      setSummary(total)
+      setData({ report, insights, prevInsights, trends })
     } catch (err) {
-      setError(err.message || String(err))
+      setError(messageFor(err))
+      setData(null)
     } finally {
       setLoading(false)
     }
-  }, [startKey, endKey])
+  }, [range?.startKey, range?.endKey])
 
   useEffect(() => {
     load()
   }, [load])
 
-  return { loading, error, days, summary, reload: load }
+  return { loading, error, ...(data || {}), reload: load }
+}
+
+export function useDayReport(dateKey) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [data, setData] = useState(null)
+
+  const load = useCallback(async () => {
+    if (!dateKey) return
+    setLoading(true)
+    setError(null)
+    try {
+      const { workingHoursStart, workingHoursEnd } = getSettings()
+      const report = await loadReport(dateKey, dateKey)
+      const day = report.days.find((d) => d.dateKey === dateKey) || report.days[0]
+      const dayInsight = computeDayInsight(day, workingHoursStart, workingHoursEnd)
+      setData({ day, dayInsight })
+    } catch (err) {
+      setError(messageFor(err))
+      setData(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [dateKey])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  return { loading, error, ...(data || {}), reload: load }
 }
