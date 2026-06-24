@@ -20,9 +20,18 @@ Microsoft connected, just Slack connected, or both.
 
 ## Features
 
-- **Dashboard** — summary cards with total time per category over a date range
-- **Day view** — colour-coded 30-minute timeline, one row per day
+- **Dashboard** — a plain-English weekly summary, five headline insight cards
+  (deep focus, in meetings, busiest day, most focused day, focus rate) with
+  week-over-week trends, and insight panels: time breakdown per day, best focus
+  windows, top time consumers, and focus time by day. Defaults to **this week**.
+- **Day view** — a single day in detail: summary sentence, vertical colour-coded
+  timeline, and day stats (focus rate, meeting time, longest focus block, first
+  message). Reached by clicking any day on the dashboard.
 - **Settings** — connect/disconnect accounts, set working hours, set the Slack proxy URL
+
+Category labels shown to users are human-readable (e.g. *Deep focus*,
+*Responding & messaging*, *Likely unscheduled calls*) — raw internal keys never
+appear in the UI.
 
 Tokens are stored in `localStorage`. All API calls are made from the browser,
 except Slack, which is proxied through a Cloudflare Worker (Slack's API has no

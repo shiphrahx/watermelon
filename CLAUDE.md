@@ -56,9 +56,23 @@ cd cloudflare && npx wrangler deploy
   day into `meeting` / `focus` / `comms` / `possible-adhoc`. Core rules are in
   place; refinement points are marked with `TODO`.
 - `src/analysis/report.js` — pure pipeline: raw data + range + working hours →
-  per-day classified blocks + summary. Network/React-free, fully unit-tested.
-- `src/hooks/useProductivityData.js` — fetches raw data via `mock/index.js`,
-  then calls `buildReport`. In mock mode it bypasses the connection gating.
+  per-day classified blocks (+ events/messages) + summary. React/network-free.
+- `src/analysis/insights.js` — turns a report into dashboard metrics: focus
+  rate, busiest/most-focused day, focus windows, top time consumers, focus by
+  day, week-over-week trends, and plain-English summary sentences. Pure.
+- `src/utils/ranges.js` — week presets (this/last/last-2), week+day navigation,
+  previous-week comparison, custom-range clamping (max 31 days).
+- `src/utils/segments.js` — merges consecutive same-category blocks into the
+  day-view timeline bands.
+- `src/data/loadReport.js` — shared fetch+assemble used by both hooks.
+- `src/hooks/useProductivityData.js` — `useDashboardData(range)` (current +
+  previous week, insights, trends) and `useDayReport(dateKey)`. Mock mode
+  bypasses connection gating.
+- Categories are renamed for display in `classify.js` (`CATEGORY_LABELS`); the
+  raw keys (`meeting`/`focus`/`comms`/`possible-adhoc`) must NEVER reach the UI.
+  Palette is `--color-*` CSS vars mirroring `CATEGORY_COLORS`.
+- Routes: `/` Dashboard (default), `/day/:dateKey` Day view, `/settings`.
+  Default range is **this week** (Mon→today, or Mon→Fri on weekends).
 - `src/components/` — `DateRangePicker`, `SummaryCards`, `Timeline`.
 - `src/pages/` — `Dashboard`, `DayView`, `Settings`.
 - `src/utils/` — `time.js` (block/date helpers) and `settings.js` (localStorage
