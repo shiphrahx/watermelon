@@ -6,6 +6,7 @@
 
 import { getSlackToken } from '../auth/slack.js'
 import { getSlackProxyUrl } from '../utils/settings.js'
+import { startOfDayISO, endOfDayISO } from '../utils/time.js'
 
 async function slackGet(path, params = {}) {
   const token = getSlackToken()
@@ -43,9 +44,12 @@ async function listConversations() {
 }
 
 // Fetch messages the user sent/received across all conversations in the time
-// range. Returns raw Slack message objects (with channel set); normalization
-// to internal timestamps happens in the normalization layer.
-export async function fetchSlackMessages(startMs, endMs) {
+// range. Takes "YYYY-MM-DD" date keys (consistent with the Graph fetchers and
+// the mock layer). Returns raw Slack message objects (with channel set);
+// normalization to internal timestamps happens in the normalization layer.
+export async function fetchSlackMessages(startKey, endKey) {
+  const startMs = new Date(startOfDayISO(startKey)).getTime()
+  const endMs = new Date(endOfDayISO(endKey)).getTime()
   const oldest = (startMs / 1000).toFixed(6)
   const latest = (endMs / 1000).toFixed(6)
 

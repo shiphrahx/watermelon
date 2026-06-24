@@ -3,13 +3,16 @@
 // summary. Works with whichever connections are available (MS, Slack, both).
 
 import { useCallback, useEffect, useState } from 'react'
-import { fetchCalendarEvents, fetchTeamsMessages } from '../api/graph.js'
-import { fetchSlackMessages } from '../api/slack.js'
+import {
+  USE_MOCK,
+  getCalendarEvents,
+  getTeamsMessages,
+  getSlackMessages,
+} from '../mock/index.js'
 import { isMicrosoftConnected } from '../auth/microsoft.js'
 import { isSlackConnected } from '../auth/slack.js'
-import { classifyDay, summarise } from '../analysis/classify.js'
+import { buildReport } from '../analysis/report.js'
 import { getSettings } from '../utils/settings.js'
-import { dateKeysInRange, startOfDayISO, endOfDayISO } from '../utils/time.js'
 
 export function useProductivityData(startKey, endKey) {
   const [loading, setLoading] = useState(false)
@@ -19,7 +22,10 @@ export function useProductivityData(startKey, endKey) {
 
   const load = useCallback(async () => {
     if (!startKey || !endKey) return
-    if (!isMicrosoftConnected() && !isSlackConnected()) {
+
+    const useMicrosoft = USE_MOCK || isMicrosoftConnected()
+    const useSlack = USE_MOCK || isSlackConnected()
+    if (!useMicrosoft && !useSlack) {
       setError('Connect Microsoft or Slack in Settings to see your report.')
       setDays([])
       setSummary(null)
@@ -31,48 +37,25 @@ export function useProductivityData(startKey, endKey) {
     try {
       const { workingHoursStart, workingHoursEnd } = getSettings()
 
-      // Calendar events (Microsoft only).
-      let events = []
-      if (isMicrosoftConnected()) {
-        events = await fetchCalendarEvents(startKey, endKey)
-      }
+      // Fetch raw API-shaped data through the mock/real data router. In mock
+      // mode both calendar + Teams resolve from the mock layer; otherwise they
+      // depend on which account is connected.
+      const rawCalendar = useMicrosoft ? await getCalendarEvents(startKey, endKey) : []
+      const rawTeams = useMicrosoft ? await getTeamsMessages(startKey, endKey) : []
+      const rawSlack = useSlack ? await getSlackMessages(startKey, endKey) : []
 
-      // Messages from both sources, merged into one timeline.
-      let messages = []
-      if (isMicrosoftConnected()) {
-        const teams = await fetchTeamsMessages(startKey, endKey)
-        messages = messages.concat(teams)
-      }
-      if (isSlackConnected()) {
-        const startMs = new Date(startOfDayISO(startKey)).getTime()
-        const endMs = new Date(endOfDayISO(endKey)).getTime()
-        const slack = await fetchSlackMessages(startMs, endMs)
-        messages = messages.concat(slack)
-      }
-
-      // Classify each day independently.
-      const keys = dateKeysInRange(startKey, endKey)
-      const classifiedDays = keys.map((dateKey) => {
-        const dayStartMs = new Date(startOfDayISO(dateKey)).getTime()
-        const dayEndMs = new Date(endOfDayISO(dateKey)).getTime()
-        const dayEvents = events.filter(
-          (e) => e.end.getTime() >= dayStartMs && e.start.getTime() <= dayEndMs,
-        )
-        const dayMessages = messages.filter(
-          (m) => m.timestamp >= dayStartMs && m.timestamp <= dayEndMs,
-        )
-        const blocks = classifyDay({
-          dateKey,
-          workingStart: workingHoursStart,
-          workingEnd: workingHoursEnd,
-          events: dayEvents,
-          messages: dayMessages,
-        })
-        return { dateKey, blocks }
+      const { days: classifiedDays, summary: total } = buildReport({
+        startKey,
+        endKey,
+        workingStart: workingHoursStart,
+        workingEnd: workingHoursEnd,
+        rawCalendar,
+        rawTeams,
+        rawSlack,
       })
 
       setDays(classifiedDays)
-      setSummary(summarise(classifiedDays.flatMap((d) => d.blocks)))
+      setSummary(total)
     } catch (err) {
       setError(err.message || String(err))
     } finally {
