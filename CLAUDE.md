@@ -60,6 +60,16 @@ cd cloudflare && npx wrangler deploy
 - `src/analysis/insights.js` — turns a report into dashboard metrics: focus
   rate, busiest/most-focused day, focus windows, top time consumers, focus by
   day, week-over-week trends, and plain-English summary sentences. Pure.
+- Deep-insight analytics (all pure, one test file each):
+  `analysis/overview.js` (day-quality labels, end-of-day overrun, per-day focus
+  rate), `analysis/meetings.js` (back-to-back, fragmentation, recovery, longest
+  block), `analysis/focus.js` (block-size distribution, AM/PM split, consistency,
+  longest block), `analysis/messaging.js` (volume by hour, meeting multitasking,
+  context switching, quietest hour, response pattern, Teams/Slack split).
+- Dashboard is four tabs (`components/tabs/*`): Overview, Meetings, Focus,
+  Messaging. Each tab computes its analytics from the shared report `days` via
+  `useMemo`. The active tab is stored in the URL (`?tab=`) so it survives date
+  changes and round-trips to the day view (`/day/:dateKey?tab=`).
 - `src/utils/ranges.js` — week presets (this/last/last-2), week+day navigation,
   previous-week comparison, custom-range clamping (max 31 days).
 - `src/utils/segments.js` — merges consecutive same-category blocks into the

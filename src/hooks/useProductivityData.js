@@ -49,7 +49,15 @@ export function useDashboardData(range) {
       })
       const trends = computeTrends(insights, prevInsights)
 
-      setData({ report, insights, prevInsights, trends })
+      setData({
+        report,
+        days: report.days,
+        workingStart: workingHoursStart,
+        workingEnd: workingHoursEnd,
+        insights,
+        prevInsights,
+        trends,
+      })
     } catch (err) {
       setError(messageFor(err))
       setData(null)
