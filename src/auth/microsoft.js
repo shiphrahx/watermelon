@@ -44,7 +44,19 @@ export function getMicrosoftAccount() {
   return getActiveAccount()
 }
 
+export function isMicrosoftConfigured() {
+  return !!MS_CLIENT_ID
+}
+
 export async function loginMicrosoft() {
+  if (!isMicrosoftConfigured()) {
+    // Without a client ID, MSAL sends an empty client_id and Azure returns
+    // AADSTS900144. Fail early with an actionable message instead.
+    throw new Error(
+      'Microsoft client ID is not configured. Set VITE_MS_CLIENT_ID in a .env ' +
+        'file (copy .env.example) and restart the dev server / rebuild. See DEPLOY.md.',
+    )
+  }
   await initMicrosoft()
   // Popup keeps the SPA state intact, which avoids re-running redirect handling.
   const result = await msalInstance.loginPopup({ scopes: MS_SCOPES })
