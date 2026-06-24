@@ -1,23 +1,15 @@
-// App shell: nav + routed pages. Holds the shared date range in state and
-// passes it to pages via the router outlet context. Completes a pending Slack
-// OAuth redirect on first load.
+// App shell: nav + routed pages. Completes a pending Slack OAuth redirect on
+// first load. Pages manage their own date range / day selection.
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { hasSlackRedirectParams, completeSlackLogin } from './auth/slack.js'
 import { initMicrosoft } from './auth/microsoft.js'
 import { toDateKey } from './utils/time.js'
 
 export default function App() {
-  const today = toDateKey(new Date())
-  const [startKey, setStartKey] = useState(today)
-  const [endKey, setEndKey] = useState(today)
   const navigate = useNavigate()
-
-  function setRange(s, e) {
-    setStartKey(s)
-    setEndKey(e)
-  }
+  const todayKey = toDateKey(new Date())
 
   // On load: finish any Microsoft redirect handling and complete a Slack
   // OAuth callback if we were redirected back with a code.
@@ -45,13 +37,13 @@ export default function App() {
           <NavLink to="/" end>
             Dashboard
           </NavLink>
-          <NavLink to="/day">Day view</NavLink>
+          <NavLink to={`/day/${todayKey}`}>Today</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
       </header>
 
       <main className="app__main">
-        <Outlet context={{ startKey, endKey, setRange }} />
+        <Outlet />
       </main>
 
       <footer className="app__footer">

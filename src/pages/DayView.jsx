@@ -1,52 +1,66 @@
-// Day view: a colour-coded timeline per day in the selected range, with a
-// category legend.
+// Day view: a single day in detail — summary sentence, vertical timeline, and
+// day stat cards. Reached by clicking a day on the dashboard.
 
-import { useOutletContext } from 'react-router-dom'
-import DateRangePicker from '../components/DateRangePicker.jsx'
-import Timeline from '../components/Timeline.jsx'
-import { useProductivityData } from '../hooks/useProductivityData.js'
-import { CATEGORIES, CATEGORY_LABELS, CATEGORY_COLORS } from '../analysis/classify.js'
-
-function Legend() {
-  return (
-    <div className="legend">
-      {CATEGORIES.map((cat) => (
-        <span key={cat} className="legend__item">
-          <span
-            className="legend__swatch"
-            style={{ backgroundColor: CATEGORY_COLORS[cat] }}
-          />
-          {CATEGORY_LABELS[cat]}
-        </span>
-      ))}
-    </div>
-  )
-}
+import { useMemo } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import DayTimeline from '../components/DayTimeline.jsx'
+import DayStats from '../components/DayStats.jsx'
+import CategoryLegend from '../components/CategoryLegend.jsx'
+import { SkeletonPanel } from '../components/Skeleton.jsx'
+import ErrorState from '../components/ErrorState.jsx'
+import { useDayReport } from '../hooks/useProductivityData.js'
+import { dailySummarySentence } from '../analysis/insights.js'
+import { getSettings } from '../utils/settings.js'
+import { navigateDay } from '../utils/ranges.js'
+import { fromDateKey } from '../utils/time.js'
 
 export default function DayView() {
-  const { startKey, endKey, setRange } = useOutletContext()
-  const { loading, error, days } = useProductivityData(startKey, endKey)
+  const { dateKey } = useParams()
+  const navigate = useNavigate()
+  const { workingHoursStart, workingHoursEnd } = getSettings()
+
+  const { loading, error, day, dayInsight, reload } = useDayReport(dateKey)
+
+  const prettyDate = useMemo(
+    () =>
+      fromDateKey(dateKey).toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+      }),
+    [dateKey],
+  )
+
+  const goToDay = (direction) => navigate(`/day/${navigateDay(dateKey, direction)}`)
 
   return (
     <section>
-      <h1>Day view</h1>
-      <DateRangePicker
-        startKey={startKey}
-        endKey={endKey}
-        onChange={(s, e) => setRange(s, e)}
-      />
-      <Legend />
-
-      {loading && <p className="status">Building your timeline…</p>}
-      {error && <p className="status status--error">{error}</p>}
-
-      {!loading && !error && (
-        <div className="timelines">
-          {days.map((day) => (
-            <Timeline key={day.dateKey} dateKey={day.dateKey} blocks={day.blocks} />
-          ))}
-          {days.length === 0 && <p className="status">No days to show.</p>}
+      <div className="day-view__head">
+        <button className="back-link" onClick={() => navigate('/')}>
+          ‹ Back to dashboard
+        </button>
+        <div className="week-nav">
+          <button className="icon-button" aria-label="Previous day" onClick={() => goToDay(-1)}>
+            ‹
+          </button>
+          <button className="icon-button" aria-label="Next day" onClick={() => goToDay(1)}>
+            ›
+          </button>
         </div>
+      </div>
+
+      <h1>{prettyDate}</h1>
+
+      {loading && <SkeletonPanel lines={8} />}
+      {!loading && error && <ErrorState message={error} onRetry={reload} />}
+
+      {!loading && !error && dayInsight && (
+        <>
+          <p className="summary-sentence">{dailySummarySentence(dayInsight)}</p>
+          <CategoryLegend />
+          <DayTimeline day={day} workingStart={workingHoursStart} workingEnd={workingHoursEnd} />
+          <DayStats dayInsight={dayInsight} />
+        </>
       )}
     </section>
   )

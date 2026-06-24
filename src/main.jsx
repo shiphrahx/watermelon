@@ -15,7 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<Dashboard />} />
-          <Route path="day" element={<DayView />} />
+          <Route path="day/:dateKey" element={<DayView />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
