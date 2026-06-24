@@ -14,19 +14,40 @@ import { buildDayBlocks, BLOCK_MINUTES, MS_PER_MINUTE } from '../utils/time.js'
 
 export const CATEGORIES = ['meeting', 'focus', 'comms', 'possible-adhoc']
 
+// Human-readable display names. The raw keys above must NEVER appear in the UI —
+// always render through CATEGORY_LABELS.
 export const CATEGORY_LABELS = {
-  meeting: 'Meeting',
-  focus: 'Focus',
-  comms: 'Comms',
-  'possible-adhoc': 'Possible ad-hoc',
+  meeting: 'In meetings',
+  focus: 'Deep focus',
+  comms: 'Responding & messaging',
+  'possible-adhoc': 'Likely unscheduled calls',
 }
 
-export const CATEGORY_COLORS = {
-  meeting: '#e4572e', // watermelon red
-  focus: '#2e8b57', // rind green
-  comms: '#f4a259', // amber
-  'possible-adhoc': '#7d4f9c', // purple
+// Singular phrasing used in the day-view timeline ("Likely unscheduled call").
+export const CATEGORY_LABELS_SINGULAR = {
+  meeting: 'In meeting',
+  focus: 'Deep focus',
+  comms: 'Responding & messaging',
+  'possible-adhoc': 'Likely unscheduled call',
 }
+
+export const CATEGORY_DESCRIPTIONS = {
+  meeting: 'Time blocked by calendar events you accepted',
+  focus: 'Uninterrupted blocks of 20+ minutes with no meetings or messages',
+  comms: 'Active time spent on messages, but no formal meeting',
+  'possible-adhoc':
+    'Calendar gaps where your messaging went quiet — you were probably in a call',
+}
+
+// Calm, consistent palette. Mirrored as CSS variables in index.css.
+export const CATEGORY_COLORS = {
+  meeting: '#5B8DEF', // blue
+  focus: '#4CAF82', // green
+  comms: '#F5A623', // amber
+  'possible-adhoc': '#9B8EC4', // purple
+}
+
+export const EMPTY_COLOR = '#E0E0E0'
 
 const FOCUS_GAP_MINUTES = 20 // quiet stretch needed to count as focus
 const ADHOC_SILENCE_MINUTES = 30 // abrupt silence that may hide an ad-hoc meeting
