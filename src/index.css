@@ -725,3 +725,209 @@ button:disabled {
   gap: 1rem;
   margin-top: 1.25rem;
 }
+
+/* =========================================================================
+   Tabs & deep-insight panels
+   ========================================================================= */
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+  margin: 0.5rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+.tab-bar__tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  padding: 0.5rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ink);
+  filter: none;
+}
+
+.tab--active {
+  color: var(--ink);
+  border-bottom-color: var(--color-focus);
+}
+
+.tab-bar__dayview {
+  background: none;
+  border: none;
+  color: var(--melon-red);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.4rem 0.2rem;
+}
+
+/* Day-quality tag */
+.day-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  margin-left: 0.4rem;
+  background: #eef2f7;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Headline stat (back-to-back %, multitasking count, etc.) */
+.headline-stat {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.headline-explain {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0.9rem;
+}
+
+/* Simple two-column pair lists */
+.pair-list,
+.simple-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.pair-list__row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pair-list__row .muted {
+  white-space: nowrap;
+}
+
+/* Sparkline */
+.sparkline {
+  width: 100%;
+  height: 60px;
+}
+
+.spark-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Dot plot (focus consistency) */
+.dotplot-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.dotplot-track {
+  position: relative;
+  height: 16px;
+  background: #f1f1ee;
+  border-radius: 5px;
+}
+
+.dotplot-dot {
+  position: absolute;
+  top: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-focus);
+  transform: translateX(-50%);
+}
+
+/* Two-segment split bar */
+.split-bar {
+  display: flex;
+  height: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-empty);
+  margin: 0.3rem 0;
+}
+
+.split-bar__seg {
+  height: 100%;
+}
+
+.split-row {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+/* Stacked volume bars (messages by hour) */
+.vol-row {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.82rem;
+  margin-bottom: 0.4rem;
+}
+
+.vol-track {
+  display: flex;
+  height: 16px;
+  background: #f1f1ee;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.vol-seg {
+  height: 100%;
+}
+
+/* Donut (teams vs slack) */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.donut {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.donut__hole {
+  width: 64px;
+  height: 64px;
+  background: var(--card-bg);
+  border-radius: 50%;
+  margin: 23px auto 0;
+}
+
+.donut-legend {
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
