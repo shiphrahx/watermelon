@@ -48,26 +48,14 @@ export async function fetchCalendarEvents(startKey, endKey) {
     $orderby: 'start/dateTime',
     $top: '100',
   })
-  const events = await graphGetAll(`/me/calendarView?${params.toString()}`)
-
-  return events
-    .filter((e) => !e.isAllDay)
-    .filter((e) => {
-      // Exclude events the user explicitly declined.
-      const response = e.responseStatus?.response
-      return response !== 'declined'
-    })
-    .map((e) => ({
-      id: e.id,
-      subject: e.subject || '(no subject)',
-      start: new Date(e.start.dateTime + 'Z'),
-      end: new Date(e.end.dateTime + 'Z'),
-      showAs: e.showAs,
-    }))
+  // Return raw Graph event objects. Filtering (declined / all-day) and date
+  // parsing happen in the normalization layer, so mock and real data flow
+  // through identical downstream code.
+  return graphGetAll(`/me/calendarView?${params.toString()}`)
 }
 
 // Fetch Teams chat messages across the user's chats within the range.
-// Returns a flat list of { timestamp } for activity classification.
+// Returns raw Graph chat-message objects (with chatId set).
 export async function fetchTeamsMessages(startKey, endKey) {
   const start = new Date(startOfDayISO(startKey)).getTime()
   const end = new Date(endOfDayISO(endKey)).getTime()
@@ -86,7 +74,8 @@ export async function fetchTeamsMessages(startKey, endKey) {
         if (!m.createdDateTime) continue
         const ts = new Date(m.createdDateTime).getTime()
         if (ts >= start && ts <= end) {
-          messages.push({ timestamp: ts, source: 'teams', chatId: chat.id })
+          // Raw Graph message shape, ensuring chatId is present for downstream.
+          messages.push({ ...m, chatId: chat.id })
         }
       }
     } catch {

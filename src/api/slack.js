@@ -42,8 +42,9 @@ async function listConversations() {
   return conversations
 }
 
-// Fetch message timestamps the user sent/received across all conversations in
-// the time range. Returns a flat list of { timestamp } in ms.
+// Fetch messages the user sent/received across all conversations in the time
+// range. Returns raw Slack message objects (with channel set); normalization
+// to internal timestamps happens in the normalization layer.
 export async function fetchSlackMessages(startMs, endMs) {
   const oldest = (startMs / 1000).toFixed(6)
   const latest = (endMs / 1000).toFixed(6)
@@ -64,11 +65,8 @@ export async function fetchSlackMessages(startMs, endMs) {
         })
         for (const m of data.messages || []) {
           if (!m.ts) continue
-          messages.push({
-            timestamp: Math.round(parseFloat(m.ts) * 1000),
-            source: 'slack',
-            channel: conv.id,
-          })
+          // Raw Slack message shape, ensuring channel is present for downstream.
+          messages.push({ ...m, channel: conv.id })
         }
         cursor = data.response_metadata?.next_cursor || ''
       } while (cursor)
