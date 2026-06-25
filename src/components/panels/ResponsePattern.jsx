@@ -8,7 +8,9 @@ export default function ResponsePattern({ pattern }) {
   if (!pattern || !pattern.sufficient) {
     return (
       <Panel title="Response pattern">
-        <p className="panel__empty">Not enough thread data to calculate response patterns.</p>
+        <p className="panel__empty">
+          Not enough message data to calculate response patterns. Try selecting a longer date range.
+        </p>
       </Panel>
     )
   }

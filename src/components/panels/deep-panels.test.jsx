@@ -236,7 +236,7 @@ describe('ResponsePattern', () => {
 
   it('shows insufficient-data message', () => {
     render(<ResponsePattern pattern={{ sufficient: false }} />)
-    expect(screen.getByText(/Not enough thread data/)).toBeInTheDocument()
+    expect(screen.getByText(/Not enough message data/)).toBeInTheDocument()
   })
 })
 

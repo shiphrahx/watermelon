@@ -21,7 +21,7 @@ export function normalizeCalendarEvents(rawEvents = []) {
     }))
 }
 
-// Raw Graph chat message -> { timestamp, source: 'teams', chatId }
+// Raw Graph chat message -> { timestamp, source: 'teams', chatId, senderId }
 export function normalizeTeamsMessages(rawMessages = []) {
   return rawMessages
     .filter((m) => m.createdDateTime)
@@ -29,10 +29,11 @@ export function normalizeTeamsMessages(rawMessages = []) {
       timestamp: new Date(m.createdDateTime).getTime(),
       source: 'teams',
       chatId: m.chatId,
+      senderId: m.from?.user?.id,
     }))
 }
 
-// Raw Slack message -> { timestamp, source: 'slack', channel }
+// Raw Slack message -> { timestamp, source: 'slack', channel, senderId }
 export function normalizeSlackMessages(rawMessages = []) {
   return rawMessages
     .filter((m) => m.ts)
@@ -40,5 +41,6 @@ export function normalizeSlackMessages(rawMessages = []) {
       timestamp: Math.round(parseFloat(m.ts) * 1000),
       source: 'slack',
       channel: m.channel,
+      senderId: m.user,
     }))
 }

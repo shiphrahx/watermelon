@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { buildRecentDataset, datasetDays, dateKeyOf } from './generator.js'
 import { buildReport } from '../analysis/report.js'
 import { backToBack, fragmentation } from '../analysis/meetings.js'
+import { responsePattern } from '../analysis/messaging.js'
 import { weekdayName } from '../analysis/insights.js'
 
 // Fixed Wednesday so the dataset deterministically covers full working weeks.
@@ -52,5 +53,14 @@ describe('mock scenarios (issue #6)', () => {
   it('dataset always includes the current week through Friday', () => {
     const days = datasetDays(TODAY)
     expect(dateKeyOf(days[days.length - 1])).toBe('2025-06-27') // Fri of that week
+  })
+
+  it('produces a realistic response-pattern distribution (issue #13)', () => {
+    const out = reportForDataset()
+    const r = responsePattern(out)
+    expect(r.sufficient).toBe(true)
+    expect(r.samples).toBeGreaterThanOrEqual(20)
+    expect(r.immediate).toBeGreaterThanOrEqual(30)
+    expect(r.considered).toBeGreaterThanOrEqual(25)
   })
 })

@@ -131,6 +131,14 @@ const SLACK_USER = 'U012AB3CD'
 const SLACK_CHANNELS = ['C012AB3EF', 'C034CD5GH', 'C056EF7IJ'] // 3+ channels
 const SLACK_DM = 'D078GH9KL' // DM channel (different format)
 
+// Other participants — used to seed incoming messages so the user's replies can
+// be recognised as responses to someone else (not just consecutive self-sends).
+const OTHER_SLACK_USERS = ['U999AAA01', 'U888BBB02']
+const OTHER_TEAMS_USERS = [
+  { displayName: 'Dev A', id: 'user_777' },
+  { displayName: 'PM B', id: 'user_888' },
+]
+
 const TEAMS_TEXTS = [
   'Just reviewing the PR now',
   'Can you take a look when you get a sec?',
@@ -188,26 +196,58 @@ function makeAllDayEvent(date) {
   }
 }
 
-function makeTeamsMessage(date, n, instant) {
+function makeTeamsMessage(date, n, instant, sender = TEAMS_USER, chatId) {
   const text = TEAMS_TEXTS[n % TEAMS_TEXTS.length]
   return {
     id: `tmsg_${dateKeyOf(date)}_${pad(n)}`,
     createdDateTime: instant.toISOString(),
-    from: { user: { displayName: TEAMS_USER.displayName, id: TEAMS_USER.id } },
+    from: { user: { displayName: sender.displayName, id: sender.id } },
     body: { content: text, contentType: 'text' },
-    chatId: TEAMS_CHATS[n % TEAMS_CHATS.length],
+    chatId: chatId || TEAMS_CHATS[n % TEAMS_CHATS.length],
   }
 }
 
-function makeSlackMessage(date, n, instant, channel) {
+function makeSlackMessage(date, n, instant, channel, user = SLACK_USER) {
   const text = SLACK_TEXTS[n % SLACK_TEXTS.length]
   return {
     ts: (instant.getTime() / 1000).toFixed(6),
-    user: SLACK_USER,
+    user,
     text,
     channel,
     type: 'message',
   }
+}
+
+// Build incoming/reply thread pairs for a day. Each pair is a message from
+// another user followed by the user's reply after a chosen gap, giving a
+// deterministic mix of immediate / considered / async responses.
+function buildReplyThreads(date, dayIndex) {
+  const teams = []
+  const slack = []
+  const specs = [
+    { startMin: M(13, 30), gap: 2, platform: 'slack' }, // immediate (< 5)
+    { startMin: M(13, 50), gap: 12, platform: 'teams' }, // considered (5–30)
+    { startMin: M(14, 10), gap: 45, platform: 'slack' }, // async (> 30)
+    { startMin: M(16, 0), gap: 3, platform: 'teams' }, // immediate (< 5)
+  ]
+  const key = dateKeyOf(date)
+  specs.forEach((s, i) => {
+    const t0 = localAt(date, s.startMin)
+    const t1 = localAt(date, s.startMin + s.gap)
+    if (s.platform === 'slack') {
+      // Dedicated thread channel so the only sender change is the reply itself.
+      const channel = `CT_${key}_${i}`
+      const other = OTHER_SLACK_USERS[i % OTHER_SLACK_USERS.length]
+      slack.push(makeSlackMessage(date, 900 + i, t0, channel, other))
+      slack.push(makeSlackMessage(date, 920 + i, t1, channel, SLACK_USER))
+    } else {
+      const chatId = `chat_t_${key}_${i}`
+      const other = OTHER_TEAMS_USERS[i % OTHER_TEAMS_USERS.length]
+      teams.push(makeTeamsMessage(date, 900 + i, t0, other, chatId))
+      teams.push(makeTeamsMessage(date, 920 + i, t1, TEAMS_USER, chatId))
+    }
+  })
+  return { teams, slack }
 }
 
 // Evenly spread `count` instants across [startMin, endMin) on `date`.
@@ -302,6 +342,13 @@ export function generateDay(date, profile, options = {}) {
       )
     })
   }
+
+  // --- Reply threads (incoming message from another user -> the user's reply) ---
+  // Seeds realistic response-time data: a deterministic mix of immediate
+  // (< 5 min), considered (5–30 min) and async (30 min+) replies.
+  const threads = buildReplyThreads(date, dayIndex)
+  teamsMessages.push(...threads.teams)
+  slackMessages.push(...threads.slack)
 
   // --- Out-of-hours messages (excluded from the report) ---
   if (outOfHours) {
