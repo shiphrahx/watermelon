@@ -50,10 +50,10 @@ describe('mondayOf', () => {
 })
 
 describe('thisWeekRange', () => {
-  it('runs Monday to today on a weekday', () => {
-    expect(thisWeekRange(WED)).toEqual({ startKey: '2025-06-23', endKey: '2025-06-25' })
+  it('always runs the full Monday-to-Friday working week on a weekday', () => {
+    expect(thisWeekRange(WED)).toEqual({ startKey: '2025-06-23', endKey: '2025-06-27' })
   })
-  it('runs Monday to Friday on a weekend', () => {
+  it('runs Monday to Friday on a weekend too', () => {
     expect(thisWeekRange(SAT)).toEqual({ startKey: '2025-06-23', endKey: '2025-06-27' })
   })
 })

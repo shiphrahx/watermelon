@@ -4,7 +4,7 @@ import { getMockTeamsMessages } from './teams.js'
 import { getMockSlackMessages } from './slack.js'
 import {
   buildRecentDataset,
-  recentWorkingDays,
+  datasetDays,
   dateKeyOf,
   dayBoundsMs,
   parseGraphDateTime,
@@ -13,7 +13,7 @@ import {
 // The fetchers build their dataset relative to "today" at call time, so derive
 // the expected days the same way here.
 const today = new Date()
-const days = recentWorkingDays(today, 10)
+const days = datasetDays(today)
 const oldestKey = dateKeyOf(days[0])
 const newestKey = dateKeyOf(days[days.length - 1])
 const full = buildRecentDataset(today)

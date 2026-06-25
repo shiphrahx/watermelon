@@ -86,11 +86,16 @@ export const PROFILE_SEQUENCE = [
 // Meeting templates per profile. Each: [subject, startMin, endMin, response, online].
 // Every profile includes exactly one declined meeting (to verify the filter).
 const M = (h, m) => h * 60 + m
+// Meeting templates per profile. Designed so the week contains realistic
+// scheduling pressure: heavy-meetings & mixed have back-to-back blocks (gap
+// < 5 min), and mixed/comms-heavy/heavy have inter-meeting gaps under 20 min
+// (so the fragmentation panel is non-empty).
 const MEETINGS = {
   'heavy-meetings': [
+    // 3 morning meetings with gaps under 10 minutes between them.
     ['Daily standup', M(9, 0), M(9, 30), 'accepted', true],
-    ['Sprint planning', M(9, 30), M(10, 30), 'accepted', true],
-    ['Design review', M(10, 30), M(11, 30), 'accepted', true],
+    ['Sprint planning', M(9, 30), M(10, 30), 'accepted', true], // 0-min gap (back-to-back)
+    ['Design review', M(10, 35), M(11, 30), 'accepted', true], // 5-min gap (< 10, < 20)
     ['Stakeholder sync', M(14, 0), M(14, 30), 'accepted', false],
     ['Roadmap review', M(15, 0), M(16, 0), 'organizer', true],
     ['Vendor pitch', M(16, 30), M(17, 0), 'declined', false],
@@ -101,12 +106,14 @@ const MEETINGS = {
   ],
   'comms-heavy': [
     ['Daily standup', M(9, 30), M(10, 0), 'accepted', true],
+    ['Triage sync', M(10, 10), M(10, 40), 'accepted', true], // 10-min gap (< 20)
     ['1:1 with manager', M(15, 0), M(15, 30), 'accepted', true],
     ['Lunch & learn', M(12, 30), M(13, 0), 'declined', false],
   ],
   mixed: [
     ['Daily standup', M(9, 30), M(10, 0), 'accepted', true],
-    ['Project review', M(11, 0), M(12, 0), 'accepted', true],
+    ['Discovery call', M(10, 15), M(11, 0), 'accepted', true], // 15-min gap (< 20)
+    ['Project review', M(11, 0), M(12, 0), 'accepted', true], // 0-min gap (back-to-back)
     ['Afternoon catch-up', M(14, 30), M(15, 0), 'accepted', false],
     ['External webinar', M(16, 0), M(16, 30), 'declined', false],
   ],
@@ -322,9 +329,26 @@ export function recentWorkingDays(today, count = 10) {
   return days
 }
 
-// Build the full deterministic dataset for the last 10 working days.
+// Friday of the working week containing `date`.
+function weekFriday(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const dow = d.getDay() // 0 Sun .. 6 Sat
+  const toMonday = dow === 0 ? -6 : 1 - dow
+  d.setDate(d.getDate() + toMonday + 4) // Monday + 4 = Friday
+  return d
+}
+
+// The working days the dataset covers: anchored on the current week's Friday so
+// the whole current week (Mon–Fri) always has data, going back far enough to
+// total PROFILE_SEQUENCE.length days. Oldest first.
+export function datasetDays(today, count = PROFILE_SEQUENCE.length) {
+  return recentWorkingDays(weekFriday(today), count)
+}
+
+// Build the full deterministic dataset covering the current week plus enough
+// prior working days to total PROFILE_SEQUENCE.length.
 export function buildRecentDataset(today) {
-  const days = recentWorkingDays(today, PROFILE_SEQUENCE.length)
+  const days = datasetDays(today)
   const calendarEvents = []
   const teamsMessages = []
   const slackMessages = []

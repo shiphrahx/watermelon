@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { USE_MOCK, getCalendarEvents, getTeamsMessages, getSlackMessages } from './index.js'
 import { defaultSettings } from './settings.js'
-import { recentWorkingDays, dateKeyOf } from './generator.js'
+import { datasetDays, dateKeyOf } from './generator.js'
 
 const today = new Date()
-const days = recentWorkingDays(today, 10)
+const days = datasetDays(today)
 const oldestKey = dateKeyOf(days[0])
 const newestKey = dateKeyOf(days[days.length - 1])
 
