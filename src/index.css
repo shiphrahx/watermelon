@@ -892,15 +892,28 @@ button:disabled {
 }
 
 .vol-track {
-  display: flex;
   height: 16px;
   background: #f1f1ee;
   border-radius: 5px;
   overflow: hidden;
 }
 
+/* Proportional bar: width encodes the hour's total relative to the busiest. */
+.vol-bar {
+  display: flex;
+  height: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
 .vol-seg {
   height: 100%;
+  flex-shrink: 0;
+}
+
+.vol-row--busiest .spark-label {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 /* Donut (teams vs slack) */

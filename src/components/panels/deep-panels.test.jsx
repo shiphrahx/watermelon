@@ -183,13 +183,32 @@ describe('MessageVolumeByHour', () => {
       <MessageVolumeByHour
         volume={{
           hours: [{ startMinute: 540, label: '09:00–10:00', teams: 3, slack: 1, total: 4 }],
-          busiest: { label: '09:00–10:00', total: 4 },
+          busiest: { startMinute: 540, label: '09:00–10:00', total: 4 },
         }}
       />,
     )
     expect(screen.getByText(/Busiest hour: 09:00–10:00/)).toBeInTheDocument()
     expect(screen.getByText('Teams')).toBeInTheDocument()
     expect(screen.getByText('Slack')).toBeInTheDocument()
+  })
+
+  it('renders bar lengths proportional to message count (issue #7)', () => {
+    const { container } = render(
+      <MessageVolumeByHour
+        volume={{
+          hours: [
+            { startMinute: 540, label: '09:00–10:00', teams: 10, slack: 5, total: 15 },
+            { startMinute: 600, label: '10:00–11:00', teams: 3, slack: 0, total: 3 },
+            { startMinute: 660, label: '11:00–12:00', teams: 0, slack: 0, total: 0 },
+          ],
+          busiest: { startMinute: 540, label: '09:00–10:00', total: 15 },
+        }}
+      />,
+    )
+    const bars = container.querySelectorAll('.vol-bar')
+    expect(bars[0].style.width).toBe('100%') // busiest -> full width
+    expect(bars[1].style.width).toBe('20%') // 3/15
+    expect(bars[2].style.width).toBe('0%') // no messages
   })
 })
 

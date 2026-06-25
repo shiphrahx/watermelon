@@ -1,4 +1,8 @@
 // Messaging panel — message volume per working hour, Teams + Slack stacked.
+//
+// Each row's bar length is proportional to that hour's total message count
+// relative to the busiest hour (which renders full width). Inside the bar, the
+// Teams and Slack counts are shown as stacked segments split by their share.
 
 import Panel from '../Panel.jsx'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
@@ -18,16 +22,29 @@ export default function MessageVolumeByHour({ volume }) {
       emptyMessage="No messages found for this period."
     >
       <div>
-        {hours.map((h) => (
-          <div className="vol-row" key={h.startMinute}>
-            <span className="spark-label">{h.label}</span>
-            <div className="vol-track" title={`${h.label} · ${h.teams} Teams · ${h.slack} Slack`}>
-              <div className="vol-seg" style={{ width: `${(h.teams / max) * 100}%`, backgroundColor: TEAMS_COLOR }} />
-              <div className="vol-seg" style={{ width: `${(h.slack / max) * 100}%`, backgroundColor: SLACK_COLOR }} />
+        {hours.map((h) => {
+          const total = h.total
+          const barPct = (total / max) * 100 // proportional to the busiest hour
+          const teamsShare = total > 0 ? (h.teams / total) * 100 : 0
+          const slackShare = total > 0 ? (h.slack / total) * 100 : 0
+          const isBusiest = busiest && h.startMinute === busiest.startMinute
+          return (
+            <div className={`vol-row${isBusiest ? ' vol-row--busiest' : ''}`} key={h.startMinute}>
+              <span className="spark-label">{h.label}</span>
+              <div className="vol-track">
+                <div
+                  className="vol-bar"
+                  style={{ width: `${barPct}%` }}
+                  title={`${h.label} · ${h.teams} Teams · ${h.slack} Slack`}
+                >
+                  <div className="vol-seg" style={{ width: `${teamsShare}%`, backgroundColor: TEAMS_COLOR }} />
+                  <div className="vol-seg" style={{ width: `${slackShare}%`, backgroundColor: SLACK_COLOR }} />
+                </div>
+              </div>
+              <span className="hbar-row__value">{total}</span>
             </div>
-            <span className="hbar-row__value">{h.total}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
       {busiest && <p className="highlight-note">Busiest hour: {busiest.label} ({busiest.total} messages)</p>}
       <div className="legend" style={{ marginTop: '0.75rem' }}>
