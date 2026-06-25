@@ -63,7 +63,8 @@ export function dayQualityLabel(day, workingStart, workingEnd) {
   const maxShare = Math.max(focus, meeting, messaging, adhoc) / total
   if (maxShare < 0.4) return 'Scattered day'
 
-  return null
+  // A working day with data that matches no specific pattern still gets a label.
+  return 'Mixed day'
 }
 
 // Last activity (message or meeting end) minute-of-day for a day.

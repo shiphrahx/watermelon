@@ -69,6 +69,17 @@ describe('dayQualityLabel', () => {
     expect(dayQualityLabel(day, WS, WE)).toBe('Scattered day')
   })
 
+  it('defaults to "Mixed day" when a day with data matches no pattern', () => {
+    // focus 8 (44% share, not >4h), meeting 4, comms 3, adhoc 3 -> no rule fits
+    const cats = [
+      ...Array(8).fill('focus'),
+      ...Array(4).fill('meeting'),
+      ...Array(3).fill('comms'),
+      ...Array(3).fill('possible-adhoc'),
+    ]
+    expect(dayQualityLabel(makeDay('2025-06-23', cats, withData), WS, WE)).toBe('Mixed day')
+  })
+
   it('returns null for a day with no data', () => {
     expect(dayQualityLabel(makeDay('2025-06-23', fill('focus')), WS, WE)).toBeNull()
   })

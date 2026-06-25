@@ -3,7 +3,9 @@ import { buildRecentDataset, datasetDays, dateKeyOf, PROFILE_SEQUENCE } from './
 import { buildReport } from '../analysis/report.js'
 import { backToBack, fragmentation } from '../analysis/meetings.js'
 import { responsePattern, contextSwitching } from '../analysis/messaging.js'
+import { dayQualityLabel } from '../analysis/overview.js'
 import { weekdayName } from '../analysis/insights.js'
+import { isWeekday } from '../utils/ranges.js'
 
 // Fixed Wednesday so the dataset deterministically covers full working weeks.
 const TODAY = new Date(2025, 5, 25)
@@ -53,6 +55,17 @@ describe('mock scenarios (issue #6)', () => {
   it('dataset always includes the current week through Friday', () => {
     const days = datasetDays(TODAY)
     expect(dateKeyOf(days[days.length - 1])).toBe('2025-06-27') // Fri of that week
+  })
+
+  it('assigns a day-quality label to every working day with data (issue #4)', () => {
+    const out = reportForDataset()
+    const workingDaysWithData = out.filter(
+      (d) => isWeekday(d.dateKey) && (d.events.length || d.messages.length),
+    )
+    expect(workingDaysWithData.length).toBeGreaterThanOrEqual(5)
+    for (const d of workingDaysWithData) {
+      expect(dayQualityLabel(d, '09:00', '18:00')).toBeTruthy()
+    }
   })
 
   it('produces realistic context-switching counts (issue #12)', () => {
