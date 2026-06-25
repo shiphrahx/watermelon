@@ -218,6 +218,33 @@ function makeSlackMessage(date, n, instant, channel, user = SLACK_USER) {
   }
 }
 
+// Target number of context switches (15-min windows touching 3+ conversations)
+// per profile. comms-heavy is highest; focus-day has none.
+const CONTEXT_SWITCHES = {
+  'comms-heavy': 7,
+  mixed: 5,
+  'heavy-meetings': 4,
+  light: 2,
+  'focus-day': 0,
+}
+const BURST_SLOTS = [M(9, 0), M(9, 30), M(10, 0), M(10, 30), M(11, 0), M(11, 30), M(13, 30), M(14, 0)]
+
+// Each burst emits 3 messages in 3 distinct conversations within one 15-minute
+// window — counted as exactly one context switch.
+function buildContextBursts(date, profile) {
+  const k = CONTEXT_SWITCHES[profile] ?? 0
+  const teams = []
+  const slack = []
+  const key = dateKeyOf(date)
+  for (let i = 0; i < k; i++) {
+    const slot = BURST_SLOTS[i % BURST_SLOTS.length]
+    slack.push(makeSlackMessage(date, 800 + i * 3, localAt(date, slot + 2), `CB_${key}_${i}_a`))
+    teams.push(makeTeamsMessage(date, 800 + i * 3 + 1, localAt(date, slot + 6), TEAMS_USER, `chat_b_${key}_${i}`))
+    slack.push(makeSlackMessage(date, 800 + i * 3 + 2, localAt(date, slot + 10), `CB_${key}_${i}_c`))
+  }
+  return { teams, slack }
+}
+
 // Build incoming/reply thread pairs for a day. Each pair is a message from
 // another user followed by the user's reply after a chosen gap, giving a
 // deterministic mix of immediate / considered / async responses.
@@ -342,6 +369,14 @@ export function generateDay(date, profile, options = {}) {
       )
     })
   }
+
+  // --- Context-switch bursts ---
+  // Deterministically seed 15-minute windows that touch 3+ distinct
+  // conversations, so the context-switching panel reflects realistic behaviour
+  // (comms-heavy days highest, focus days lowest).
+  const bursts = buildContextBursts(date, profile)
+  teamsMessages.push(...bursts.teams)
+  slackMessages.push(...bursts.slack)
 
   // --- Reply threads (incoming message from another user -> the user's reply) ---
   // Seeds realistic response-time data: a deterministic mix of immediate

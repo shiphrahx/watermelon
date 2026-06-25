@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { buildRecentDataset, datasetDays, dateKeyOf } from './generator.js'
+import { buildRecentDataset, datasetDays, dateKeyOf, PROFILE_SEQUENCE } from './generator.js'
 import { buildReport } from '../analysis/report.js'
 import { backToBack, fragmentation } from '../analysis/meetings.js'
-import { responsePattern } from '../analysis/messaging.js'
+import { responsePattern, contextSwitching } from '../analysis/messaging.js'
 import { weekdayName } from '../analysis/insights.js'
 
 // Fixed Wednesday so the dataset deterministically covers full working weeks.
@@ -53,6 +53,24 @@ describe('mock scenarios (issue #6)', () => {
   it('dataset always includes the current week through Friday', () => {
     const days = datasetDays(TODAY)
     expect(dateKeyOf(days[days.length - 1])).toBe('2025-06-27') // Fri of that week
+  })
+
+  it('produces realistic context-switching counts (issue #12)', () => {
+    const out = reportForDataset()
+    const cs = contextSwitching(out)
+    // perDay is weekday-ordered, matching the dataset/profile order.
+    const byProfile = cs.perDay.map((d, i) => ({ profile: PROFILE_SEQUENCE[i], count: d.count }))
+
+    const focus = byProfile.filter((d) => d.profile === 'focus-day')
+    expect(focus.every((d) => d.count <= 1)).toBe(true)
+
+    // comms-heavy days hold the highest counts.
+    const maxCount = Math.max(...byProfile.map((d) => d.count))
+    const maxProfiles = byProfile.filter((d) => d.count === maxCount).map((d) => d.profile)
+    expect(maxProfiles).toContain('comms-heavy')
+
+    // at least two days fall in the 4–8 "busy communicator" band.
+    expect(byProfile.filter((d) => d.count >= 4 && d.count <= 8).length).toBeGreaterThanOrEqual(2)
   })
 
   it('produces a realistic response-pattern distribution (issue #13)', () => {

@@ -211,13 +211,25 @@ describe('MeetingMultitasking', () => {
 })
 
 describe('ContextSwitching', () => {
-  it('totals the switches', () => {
+  it('explains the definition and frames high counts', () => {
     render(
       <ContextSwitching
         switching={{ perDay: [{ dateKey: 'a', weekday: 'Monday', count: 6 }], total: 17 }}
       />,
     )
-    expect(screen.getByText(/switched context 17 times/)).toBeInTheDocument()
+    expect(screen.getByText(/3 or more different channels or chats/)).toBeInTheDocument()
+    expect(screen.getByText(/High context switching this week/)).toBeInTheDocument()
+  })
+
+  it('frames low and moderate counts differently', () => {
+    const { rerender } = render(
+      <ContextSwitching switching={{ perDay: [{ dateKey: 'a', weekday: 'Monday', count: 2 }], total: 3 }} />,
+    )
+    expect(screen.getByText(/Low context switching/)).toBeInTheDocument()
+    rerender(
+      <ContextSwitching switching={{ perDay: [{ dateKey: 'a', weekday: 'Monday', count: 6 }], total: 10 }} />,
+    )
+    expect(screen.getByText(/Moderate context switching/)).toBeInTheDocument()
   })
 })
 
