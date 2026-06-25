@@ -139,13 +139,15 @@ describe('LongestMeetingBlock', () => {
 })
 
 describe('FocusBlockDistribution', () => {
-  it('summarises blocks and average', () => {
+  it('uses the new title, subtitle, and descriptive row labels', () => {
     render(
       <FocusBlockDistribution
         distribution={{
           buckets: [
-            { key: 'under20', label: 'Under 20 min', counted: false, count: 0, minutes: 0 },
-            { key: '20to30', label: '20–30 min', counted: true, count: 4, minutes: 120 },
+            { key: 'under20', counted: false, count: 2, minutes: 0 },
+            { key: '20to30', counted: true, count: 4, minutes: 120 },
+            { key: '30to60', counted: true, count: 3, minutes: 130 },
+            { key: 'over60', counted: true, count: 1, minutes: 80 },
           ],
           totalMinutes: 310,
           totalBlocks: 8,
@@ -153,6 +155,10 @@ describe('FocusBlockDistribution', () => {
         }}
       />,
     )
+    expect(screen.getByText('How your focus time is structured')).toBeInTheDocument()
+    expect(screen.getByText(/long uninterrupted blocks is more valuable/)).toBeInTheDocument()
+    expect(screen.getByText('Under 20 min — not counted')).toBeInTheDocument()
+    expect(screen.getByText('Over 60 min — deep blocks')).toBeInTheDocument()
     expect(screen.getByText(/came in 8 blocks, averaging 39 minutes/)).toBeInTheDocument()
   })
 

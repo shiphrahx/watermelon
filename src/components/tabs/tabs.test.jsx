@@ -83,7 +83,7 @@ describe('tab rendering (no raw category keys leak)', () => {
 
   it('Focus renders without raw keys', () => {
     const { container } = render(<FocusTab {...tabProps} />)
-    expect(screen.getByText('Focus block size distribution')).toBeInTheDocument()
+    expect(screen.getByText('How your focus time is structured')).toBeInTheDocument()
     expect(container.textContent).not.toMatch(/comms|possible-adhoc/)
   })
 
