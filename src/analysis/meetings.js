@@ -84,23 +84,40 @@ export function fragmentation(days, maxGap = 20) {
   return { perDay, totalLostMinutes: totalLost }
 }
 
-// Average gap between consecutive meetings + a distribution breakdown.
-export function recovery(days) {
+// Distribution of real gaps (> 0 min) between accepted meetings, bucketed by
+// usefulness. Back-to-back meetings (0-min) are not gaps and are excluded.
+export function interMeetingGaps(days) {
   const gaps = []
   for (const d of weekdays(days)) {
     const meetings = dayMeetings(d)
     for (let i = 1; i < meetings.length; i++) {
       const gap = Math.round((meetings[i].start.getTime() - meetings[i - 1].end.getTime()) / 60000)
-      if (gap >= 0) gaps.push(gap)
+      if (gap > 0) gaps.push(gap)
     }
   }
-  const avg = gaps.length ? Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length) : 0
-  const distribution = {
-    under10: gaps.filter((g) => g < 10).length,
-    between: gaps.filter((g) => g >= 10 && g <= 30).length,
-    over30: gaps.filter((g) => g > 30).length,
+
+  const defs = [
+    { key: 'tooShort', label: 'Too short to use', test: (g) => g < 20 },
+    { key: 'short', label: 'Short', test: (g) => g >= 20 && g <= 30 },
+    { key: 'comfortable', label: 'Comfortable', test: (g) => g > 30 && g <= 60 },
+    { key: 'long', label: 'Long', test: (g) => g > 60 },
+  ]
+  const buckets = defs.map((def) => {
+    const xs = gaps.filter(def.test)
+    return {
+      key: def.key,
+      label: def.label,
+      count: xs.length,
+      minutes: xs.reduce((a, b) => a + b, 0),
+    }
+  })
+  const tooShort = buckets.find((b) => b.key === 'tooShort')
+  return {
+    buckets,
+    totalGaps: gaps.length,
+    tooShortCount: tooShort.count,
+    tooShortMinutes: tooShort.minutes,
   }
-  return { averageGapMinutes: avg, distribution, totalGaps: gaps.length }
 }
 
 // Longest continuous chain of meetings with gaps under `gapThreshold` minutes.

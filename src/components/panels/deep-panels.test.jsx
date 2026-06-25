@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react'
 import EndOfDayOverrun from './EndOfDayOverrun.jsx'
 import BackToBack from './BackToBack.jsx'
 import Fragmentation from './Fragmentation.jsx'
-import RecoveryTime from './RecoveryTime.jsx'
+import InterMeetingGaps from './InterMeetingGaps.jsx'
 import LongestMeetingBlock from './LongestMeetingBlock.jsx'
 import FocusBlockDistribution from './FocusBlockDistribution.jsx'
 import MorningAfternoon from './MorningAfternoon.jsx'
@@ -99,15 +99,32 @@ describe('Fragmentation', () => {
   })
 })
 
-describe('RecoveryTime', () => {
-  it('shows the average gap and distribution', () => {
+describe('InterMeetingGaps', () => {
+  it('leads with the distribution and a recoverable-time summary, no average', () => {
     render(
-      <RecoveryTime
-        recovery={{ averageGapMinutes: 22, totalGaps: 20, distribution: { under10: 4, between: 7, over30: 9 } }}
+      <InterMeetingGaps
+        gaps={{
+          totalGaps: 8,
+          tooShortCount: 3,
+          tooShortMinutes: 45,
+          buckets: [
+            { key: 'tooShort', label: 'Too short to use', count: 3, minutes: 45 },
+            { key: 'short', label: 'Short', count: 2, minutes: 50 },
+            { key: 'comfortable', label: 'Comfortable', count: 2, minutes: 90 },
+            { key: 'long', label: 'Long', count: 1, minutes: 65 },
+          ],
+        }}
       />,
     )
-    expect(screen.getByText(/22 minutes/)).toBeInTheDocument()
-    expect(screen.getByText('Under 10 min')).toBeInTheDocument()
+    expect(screen.getByText('Inter-meeting gaps')).toBeInTheDocument()
+    expect(screen.getByText('Too short to use')).toBeInTheDocument()
+    expect(screen.getByText(/3 gaps were too short to use, costing you 45m of recoverable time/)).toBeInTheDocument()
+    expect(screen.queryByText(/Average/)).toBeNull()
+  })
+
+  it('shows an empty state with no gaps', () => {
+    render(<InterMeetingGaps gaps={{ totalGaps: 0, buckets: [] }} />)
+    expect(screen.getByText(/No gaps between meetings/)).toBeInTheDocument()
   })
 })
 
