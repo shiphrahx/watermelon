@@ -19,23 +19,46 @@ import ResponsePattern from './ResponsePattern.jsx'
 import TeamsVsSlack from './TeamsVsSlack.jsx'
 
 describe('EndOfDayOverrun', () => {
-  it('summarises days that ran over', () => {
-    render(
+  it('shows only the days that ran over, with no empty rows or dashes', () => {
+    const { container } = render(
       <EndOfDayOverrun
         workingEnd="18:00"
         overrun={{
           totalDays: 5,
-          daysOver: 3,
-          perDay: [{ dateKey: '2025-06-23', weekday: 'Monday', overrunMinutes: 40, displayMinutes: 40 }],
+          daysOver: 1,
+          perDay: [
+            { dateKey: '2025-06-23', weekday: 'Monday', overrunMinutes: 40, displayMinutes: 40 },
+            { dateKey: '2025-06-24', weekday: 'Tuesday', overrunMinutes: 0, displayMinutes: 0 },
+            { dateKey: '2025-06-25', weekday: 'Wednesday', overrunMinutes: 0, displayMinutes: 0 },
+          ],
         }}
       />,
     )
-    expect(screen.getByText(/past 18:00 on 3 of 5 days/)).toBeInTheDocument()
+    expect(screen.getByText(/past 18:00 on 1 of 5 days/)).toBeInTheDocument()
+    // only the overrun day is a row
+    expect(container.querySelectorAll('.hbar-row')).toHaveLength(1)
+    expect(screen.getByText('Monday')).toBeInTheDocument()
+    expect(screen.queryByText('Tuesday')).toBeNull()
+    expect(container.textContent).not.toContain('—')
   })
 
-  it('congratulates a clean week', () => {
-    render(<EndOfDayOverrun workingEnd="18:00" overrun={{ totalDays: 5, daysOver: 0, perDay: [] }} />)
+  it('shows only the positive message and no rows for a clean week', () => {
+    const { container } = render(
+      <EndOfDayOverrun
+        workingEnd="18:00"
+        overrun={{
+          totalDays: 5,
+          daysOver: 0,
+          perDay: [
+            { dateKey: '2025-06-23', weekday: 'Monday', overrunMinutes: 0, displayMinutes: 0 },
+            { dateKey: '2025-06-24', weekday: 'Tuesday', overrunMinutes: 0, displayMinutes: 0 },
+          ],
+        }}
+      />,
+    )
     expect(screen.getByText(/stayed within your working hours every day/)).toBeInTheDocument()
+    expect(container.querySelectorAll('.hbar-row')).toHaveLength(0)
+    expect(container.textContent).not.toContain('—')
   })
 })
 
