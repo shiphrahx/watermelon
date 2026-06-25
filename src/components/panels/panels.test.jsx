@@ -54,9 +54,13 @@ describe('FocusWindows', () => {
     top: { startMinute: 600, endMinute: 660, label: '10:00–11:00', avgFocusMinutes: 60 },
   }
 
-  it('highlights the best window', () => {
+  it('highlights the best window with the on-average qualifier', () => {
     render(<FocusWindows focusWindows={focusWindows} />)
-    expect(screen.getByText('Your best focus window is 10:00–11:00')).toBeInTheDocument()
+    expect(
+      screen.getByText('Your best focus window is 10:00–11:00 on average across this week.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Average focus time per hour across the selected period')).toBeInTheDocument()
+    expect(screen.getByText('60m avg')).toBeInTheDocument()
   })
 
   it('shows an empty state when there is no focus', () => {
