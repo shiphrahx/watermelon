@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
 import EndOfDayOverrun from './EndOfDayOverrun.jsx'
-import FocusRateTrend from './FocusRateTrend.jsx'
 import BackToBack from './BackToBack.jsx'
 import Fragmentation from './Fragmentation.jsx'
 import RecoveryTime from './RecoveryTime.jsx'
@@ -62,29 +61,6 @@ describe('EndOfDayOverrun', () => {
   })
 })
 
-describe('FocusRateTrend', () => {
-  it('labels the high and low points', () => {
-    render(
-      <FocusRateTrend
-        trend={{
-          rows: [
-            { dateKey: '2025-06-23', weekday: 'Monday', focusRate: 20 },
-            { dateKey: '2025-06-24', weekday: 'Tuesday', focusRate: 80 },
-          ],
-          high: { weekday: 'Tuesday', focusRate: 80 },
-          low: { weekday: 'Monday', focusRate: 20 },
-        }}
-      />,
-    )
-    expect(screen.getByText(/High: Tuesday 80%/)).toBeInTheDocument()
-    expect(screen.getByText(/Low: Monday 20%/)).toBeInTheDocument()
-  })
-
-  it('shows an empty state', () => {
-    render(<FocusRateTrend trend={{ rows: [] }} />)
-    expect(screen.getByText(/No focus data/)).toBeInTheDocument()
-  })
-})
 
 describe('BackToBack', () => {
   it('shows the rate and pairs', () => {
