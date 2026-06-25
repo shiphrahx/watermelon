@@ -858,6 +858,25 @@ button:disabled {
   transform: translateX(-50%);
 }
 
+.dotplot-axis {
+  margin-top: 0.3rem;
+}
+
+.dotplot-axis-track {
+  position: relative;
+  height: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.dotplot-axis-tick {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* Two-segment split bar */
 .split-bar {
   display: flex;

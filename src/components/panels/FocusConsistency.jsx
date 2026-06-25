@@ -20,9 +20,12 @@ export default function FocusConsistency({ consistency, workingStart = '09:00', 
 
   const hasDots = perDay.some((d) => d.starts.length > 0)
 
+  const axisTicks = [9 * 60, 12 * 60, 15 * 60, 18 * 60].filter((m) => m >= startMin && m <= endMin)
+
   return (
     <Panel
       title="Focus consistency"
+      hint="Each dot marks the start time of a focus block. Clustered dots mean your focus happens at consistent times."
       isEmpty={!hasDots}
       emptyMessage="No focus blocks detected — try a wider date range."
     >
@@ -43,6 +46,17 @@ export default function FocusConsistency({ consistency, workingStart = '09:00', 
             </div>
           </div>
         ))}
+        {/* Shared time axis aligned to the dot tracks (09:00–18:00 scale) */}
+        <div className="dotplot-row dotplot-axis">
+          <span />
+          <div className="dotplot-axis-track">
+            {axisTicks.map((m) => (
+              <span key={m} className="dotplot-axis-tick" style={{ left: pos(m) }}>
+                {minutesToTimeLabel(m)}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </Panel>
   )

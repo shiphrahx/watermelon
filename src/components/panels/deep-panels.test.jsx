@@ -175,13 +175,18 @@ describe('MorningAfternoon', () => {
 })
 
 describe('FocusConsistency', () => {
-  it('renders the verdict and dot plot rows', () => {
+  it('renders the verdict, explanation and a time axis', () => {
     render(
       <FocusConsistency
         consistency={{ level: 'low', perDay: [{ dateKey: 'a', weekday: 'Monday', starts: [600] }] }}
       />,
     )
     expect(screen.getByText(/focus time is consistent/)).toBeInTheDocument()
+    expect(screen.getByText(/Each dot marks the start time of a focus block/)).toBeInTheDocument()
+    // axis ticks at 09:00, 12:00, 15:00, 18:00
+    for (const t of ['09:00', '12:00', '15:00', '18:00']) {
+      expect(screen.getByText(t)).toBeInTheDocument()
+    }
   })
 })
 
