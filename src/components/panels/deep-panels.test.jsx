@@ -169,14 +169,23 @@ describe('FocusBlockDistribution', () => {
 })
 
 describe('MorningAfternoon', () => {
-  it('labels the stronger half', () => {
+  it('labels the stronger half, shows the subtitle and lunch note', () => {
     render(
       <MorningAfternoon
-        split={{ morningMinutes: 192, afternoonMinutes: 118, morningPct: 62, afternoonPct: 38, better: 'morning' }}
+        split={{
+          morningMinutes: 192,
+          afternoonMinutes: 118,
+          lunchMinutes: 30,
+          morningPct: 62,
+          afternoonPct: 38,
+          better: 'morning',
+        }}
       />,
     )
     expect(screen.getByText('You focus better in the mornings.')).toBeInTheDocument()
     expect(screen.getByText('62%')).toBeInTheDocument()
+    expect(screen.getByText(/Total focus time across the selected period/)).toBeInTheDocument()
+    expect(screen.getByText(/Lunch \(12:00–13:00\)/)).toBeInTheDocument()
   })
 })
 

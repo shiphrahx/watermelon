@@ -75,6 +75,24 @@ describe('morningAfternoonSplit', () => {
   it('returns null better-half when there is no focus', () => {
     expect(morningAfternoonSplit([makeDay('2025-06-23', Array(18).fill('meeting'))]).better).toBeNull()
   })
+
+  it('excludes the lunch hour (12:00–13:00) from the split', () => {
+    // focus 09:00-10:00 (morning 60), 12:00-13:00 (lunch 60), 13:00-14:00 (afternoon 60)
+    const cats = [
+      'focus', 'focus', // 09:00-10:00 morning
+      'meeting', 'meeting', 'meeting', 'meeting', // 10:00-12:00
+      'focus', 'focus', // 12:00-13:00 lunch
+      'focus', 'focus', // 13:00-14:00 afternoon
+      ...Array(8).fill('meeting'),
+    ]
+    const split = morningAfternoonSplit([makeDay('2025-06-23', cats)])
+    expect(split.morningMinutes).toBe(60)
+    expect(split.lunchMinutes).toBe(60)
+    expect(split.afternoonMinutes).toBe(60)
+    // 50/50 of morning+afternoon, lunch not counted
+    expect(split.morningPct).toBe(50)
+    expect(split.afternoonPct).toBe(50)
+  })
 })
 
 describe('focusConsistency', () => {

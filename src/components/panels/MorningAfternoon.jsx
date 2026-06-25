@@ -1,12 +1,19 @@
-// Focus panel — morning vs afternoon focus split.
+// Focus panel — morning vs afternoon focus split (lunch shown separately).
 
 import Panel from '../Panel.jsx'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
 import { formatDuration } from '../../utils/time.js'
 
 export default function MorningAfternoon({ split }) {
-  const { morningMinutes = 0, afternoonMinutes = 0, morningPct = 0, afternoonPct = 0, better } =
-    split || {}
+  const {
+    morningMinutes = 0,
+    afternoonMinutes = 0,
+    lunchMinutes = 0,
+    morningPct = 0,
+    afternoonPct = 0,
+    better,
+  } = split || {}
+
   const label =
     better === 'morning'
       ? 'You focus better in the mornings.'
@@ -17,6 +24,7 @@ export default function MorningAfternoon({ split }) {
   return (
     <Panel
       title="Morning vs afternoon split"
+      hint="Total focus time across the selected period, split by time of day"
       isEmpty={morningMinutes + afternoonMinutes === 0}
       emptyMessage="No focus blocks detected — try a wider date range."
     >
@@ -34,6 +42,10 @@ export default function MorningAfternoon({ split }) {
         <span className="muted">{afternoonPct}%</span>
         <span>{formatDuration(afternoonMinutes)}</span>
       </div>
+      <p className="panel__hint" style={{ marginBottom: 0 }}>
+        Lunch (12:00–13:00){lunchMinutes > 0 ? `: ${formatDuration(lunchMinutes)} of focus` : ''} is
+        excluded from the split.
+      </p>
       {label && <p className="highlight-note">{label}</p>}
     </Panel>
   )
