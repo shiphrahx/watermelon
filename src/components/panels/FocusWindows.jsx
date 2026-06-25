@@ -3,7 +3,6 @@
 
 import Panel from '../Panel.jsx'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
-import { formatDuration } from '../../utils/time.js'
 
 export default function FocusWindows({ focusWindows }) {
   const slots = focusWindows?.slots || []
@@ -14,7 +13,7 @@ export default function FocusWindows({ focusWindows }) {
   return (
     <Panel
       title="Best focus windows"
-      hint="When in the day you focus best"
+      hint="Average focus time per hour across the selected period"
       isEmpty={isEmpty}
       emptyMessage="No focus blocks detected — try a longer date range."
     >
@@ -34,14 +33,16 @@ export default function FocusWindows({ focusWindows }) {
                 />
               </div>
               <span className="hbar-row__value">
-                {s.avgFocusMinutes > 0 ? formatDuration(Math.round(s.avgFocusMinutes)) : '—'}
+                {s.avgFocusMinutes > 0 ? `${Math.round(s.avgFocusMinutes)}m avg` : '—'}
               </span>
             </div>
           )
         })}
       </div>
       {top && (
-        <p className="highlight-note">Your best focus window is {top.label}</p>
+        <p className="highlight-note">
+          Your best focus window is {top.label} on average across this week.
+        </p>
       )}
     </Panel>
   )

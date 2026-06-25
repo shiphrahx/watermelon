@@ -64,22 +64,32 @@ export function focusBlockDistribution(days) {
   return { buckets, totalMinutes, totalBlocks, averageMinutes }
 }
 
-// Share of focus time before noon vs after noon.
-export function morningAfternoonSplit(days, noonMinute = 12 * 60) {
+// Share of focus time in the morning (09:00–12:00) vs afternoon (13:00–18:00).
+// The lunch hour (12:00–13:00) is a separate band and is excluded from the
+// morning/afternoon percentages so it doesn't inflate either side.
+export function morningAfternoonSplit(days, lunchStart = 12 * 60, lunchEnd = 13 * 60) {
   let morning = 0
+  let lunch = 0
   let afternoon = 0
   for (const run of allFocusRuns(days)) {
-    // Attribute each block within the run to morning/afternoon by its start.
     for (let m = run.startMinute; m < run.endMinute; m += BLOCK_MINUTES) {
-      if (m < noonMinute) morning += BLOCK_MINUTES
+      if (m < lunchStart) morning += BLOCK_MINUTES
+      else if (m < lunchEnd) lunch += BLOCK_MINUTES
       else afternoon += BLOCK_MINUTES
     }
   }
-  const total = morning + afternoon
+  const total = morning + afternoon // lunch excluded from the split
   const morningPct = total ? Math.round((morning / total) * 100) : 0
   const afternoonPct = total ? 100 - morningPct : 0
   const better = total === 0 ? null : morning >= afternoon ? 'morning' : 'afternoon'
-  return { morningMinutes: morning, afternoonMinutes: afternoon, morningPct, afternoonPct, better }
+  return {
+    morningMinutes: morning,
+    afternoonMinutes: afternoon,
+    lunchMinutes: lunch,
+    morningPct,
+    afternoonPct,
+    better,
+  }
 }
 
 function stddev(values) {

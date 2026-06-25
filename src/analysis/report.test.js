@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { buildReport } from './report.js'
 import { CATEGORIES } from './classify.js'
-import { buildRecentDataset, recentWorkingDays, dateKeyOf } from '../mock/generator.js'
+import { buildRecentDataset, datasetDays, dateKeyOf } from '../mock/generator.js'
 import { dateKeysInRange } from '../utils/time.js'
 
 const WORK = { workingStart: '09:00', workingEnd: '18:00' }
 
 describe('buildReport — single mock day', () => {
   const today = new Date()
-  const days = recentWorkingDays(today, 10)
+  const days = datasetDays(today)
   const newestKey = dateKeyOf(days[days.length - 1])
   const dataset = buildRecentDataset(today)
 
@@ -35,7 +35,7 @@ describe('buildReport — single mock day', () => {
 
 describe('buildReport — full 10-day dataset exercises every category', () => {
   const today = new Date()
-  const days = recentWorkingDays(today, 10)
+  const days = datasetDays(today)
   const startKey = dateKeyOf(days[0])
   const endKey = dateKeyOf(days[days.length - 1])
   const dataset = buildRecentDataset(today)

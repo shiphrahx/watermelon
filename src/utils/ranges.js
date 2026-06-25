@@ -32,11 +32,11 @@ function addDays(date, n) {
   return d
 }
 
-// This week: Monday -> today, or Monday -> Friday if today is a weekend.
+// This week: the full Monday -> Friday working week, so every working day
+// (including Friday) is always represented on the dashboard.
 export function thisWeekRange(today = new Date()) {
   const monday = mondayOf(today)
-  const end = isWeekend(today) ? addDays(monday, 4) : today
-  return { startKey: toDateKey(monday), endKey: toDateKey(end) }
+  return { startKey: toDateKey(monday), endKey: toDateKey(addDays(monday, 4)) }
 }
 
 // Last week: the previous Monday -> Friday (full working week).

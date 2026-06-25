@@ -5,13 +5,13 @@ import { useMemo } from 'react'
 import TopConsumers from '../panels/TopConsumers.jsx'
 import BackToBack from '../panels/BackToBack.jsx'
 import Fragmentation from '../panels/Fragmentation.jsx'
-import RecoveryTime from '../panels/RecoveryTime.jsx'
+import InterMeetingGaps from '../panels/InterMeetingGaps.jsx'
 import LongestMeetingBlock from '../panels/LongestMeetingBlock.jsx'
 import {
   topConsumers,
   backToBack,
   fragmentation,
-  recovery,
+  interMeetingGaps,
   longestMeetingBlock,
 } from '../../analysis/meetings.js'
 
@@ -21,7 +21,7 @@ export default function MeetingsTab({ days }) {
       consumers: topConsumers(days),
       b2b: backToBack(days),
       frag: fragmentation(days),
-      rec: recovery(days),
+      gaps: interMeetingGaps(days),
       longest: longestMeetingBlock(days),
     }),
     [days],
@@ -32,7 +32,7 @@ export default function MeetingsTab({ days }) {
       <TopConsumers topConsumers={data.consumers} />
       <BackToBack backToBack={data.b2b} />
       <Fragmentation fragmentation={data.frag} />
-      <RecoveryTime recovery={data.rec} />
+      <InterMeetingGaps gaps={data.gaps} />
       <LongestMeetingBlock block={data.longest} />
     </div>
   )

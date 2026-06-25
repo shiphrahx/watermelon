@@ -1,0 +1,97 @@
+import { describe, it, expect } from 'vitest'
+import { buildRecentDataset, datasetDays, dateKeyOf, PROFILE_SEQUENCE } from './generator.js'
+import { buildReport } from '../analysis/report.js'
+import { backToBack, fragmentation } from '../analysis/meetings.js'
+import { responsePattern, contextSwitching } from '../analysis/messaging.js'
+import { dayQualityLabel } from '../analysis/overview.js'
+import { weekdayName } from '../analysis/insights.js'
+import { isWeekday } from '../utils/ranges.js'
+
+// Fixed Wednesday so the dataset deterministically covers full working weeks.
+const TODAY = new Date(2025, 5, 25)
+
+function reportForDataset() {
+  const days = datasetDays(TODAY)
+  const dataset = buildRecentDataset(TODAY)
+  const { days: out } = buildReport({
+    startKey: dateKeyOf(days[0]),
+    endKey: dateKeyOf(days[days.length - 1]),
+    workingStart: '09:00',
+    workingEnd: '18:00',
+    rawCalendar: dataset.calendarEvents,
+    rawTeams: dataset.teamsMessages,
+    rawSlack: dataset.slackMessages,
+  })
+  return out
+}
+
+describe('mock scenarios (issue #6)', () => {
+  it('generates all five working days (Mon–Fri)', () => {
+    const out = reportForDataset()
+    const weekdaysWithData = new Set(
+      out.filter((d) => d.events.length || d.messages.length).map((d) => weekdayName(d.dateKey)),
+    )
+    for (const name of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']) {
+      expect(weekdaysWithData).toContain(name)
+    }
+  })
+
+  it('includes back-to-back meetings on at least two days', () => {
+    const out = reportForDataset()
+    const b2b = backToBack(out, 5)
+    expect(b2b.count).toBeGreaterThanOrEqual(2)
+    const distinctDays = new Set(b2b.pairs.map((p) => p.dateKey))
+    expect(distinctDays.size).toBeGreaterThanOrEqual(2)
+  })
+
+  it('includes inter-meeting gaps under 20 minutes on at least two days', () => {
+    const out = reportForDataset()
+    const frag = fragmentation(out, 20)
+    const daysWithGaps = frag.perDay.filter((d) => d.count > 0)
+    expect(daysWithGaps.length).toBeGreaterThanOrEqual(2)
+    expect(frag.totalLostMinutes).toBeGreaterThan(0)
+  })
+
+  it('dataset always includes the current week through Friday', () => {
+    const days = datasetDays(TODAY)
+    expect(dateKeyOf(days[days.length - 1])).toBe('2025-06-27') // Fri of that week
+  })
+
+  it('assigns a day-quality label to every working day with data (issue #4)', () => {
+    const out = reportForDataset()
+    const workingDaysWithData = out.filter(
+      (d) => isWeekday(d.dateKey) && (d.events.length || d.messages.length),
+    )
+    expect(workingDaysWithData.length).toBeGreaterThanOrEqual(5)
+    for (const d of workingDaysWithData) {
+      expect(dayQualityLabel(d, '09:00', '18:00')).toBeTruthy()
+    }
+  })
+
+  it('produces realistic context-switching counts (issue #12)', () => {
+    const out = reportForDataset()
+    const cs = contextSwitching(out)
+    // perDay is weekday-ordered, matching the dataset/profile order.
+    const byProfile = cs.perDay.map((d, i) => ({ profile: PROFILE_SEQUENCE[i], count: d.count }))
+
+    const focus = byProfile.filter((d) => d.profile === 'focus-day')
+    expect(focus.every((d) => d.count <= 1)).toBe(true)
+
+    // comms-heavy days hold the highest counts.
+    const maxCount = Math.max(...byProfile.map((d) => d.count))
+    const maxProfiles = byProfile.filter((d) => d.count === maxCount).map((d) => d.profile)
+    expect(maxProfiles).toContain('comms-heavy')
+
+    // at least two days fall in the 4–8 "busy communicator" band.
+    expect(byProfile.filter((d) => d.count >= 4 && d.count <= 8).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('produces a realistic response-pattern distribution (issue #13)', () => {
+    const out = reportForDataset()
+    const r = responsePattern(out)
+    expect(r.sufficient).toBe(true)
+    expect(r.samples).toBeGreaterThanOrEqual(20)
+    expect(r.immediate).toBeGreaterThanOrEqual(30)
+    expect(r.considered).toBeGreaterThanOrEqual(25)
+  })
+})

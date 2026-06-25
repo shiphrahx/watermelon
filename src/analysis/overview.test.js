@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { perDayFocusRate, dayQualityLabel, endOfDayOverrun } from './overview.js'
+import { dayQualityLabel, endOfDayOverrun } from './overview.js'
 import { buildDayBlocks } from '../utils/time.js'
 
 const WS = '09:00'
@@ -14,26 +14,6 @@ function makeDay(dateKey, cats, { events = [], messages = [] } = {}) {
 }
 
 const fill = (cat) => Array(18).fill(cat)
-
-describe('perDayFocusRate', () => {
-  it('computes focus rate per weekday and finds high/low', () => {
-    const days = [
-      makeDay('2025-06-23', fill('focus'), { messages: [{ timestamp: 1 }] }), // Mon 100%
-      makeDay('2025-06-24', fill('meeting'), { messages: [{ timestamp: 1 }] }), // Tue 0%
-    ]
-    const { rows, high, low } = perDayFocusRate(days, WS, WE)
-    expect(rows).toHaveLength(2)
-    expect(high.dateKey).toBe('2025-06-23')
-    expect(high.focusRate).toBe(100)
-    expect(low.dateKey).toBe('2025-06-24')
-    expect(low.focusRate).toBe(0)
-  })
-
-  it('excludes weekends', () => {
-    const days = [makeDay('2025-06-28', fill('focus'))] // Saturday
-    expect(perDayFocusRate(days, WS, WE).rows).toHaveLength(0)
-  })
-})
 
 describe('dayQualityLabel', () => {
   const withData = { messages: [{ timestamp: 1 }] }
@@ -67,6 +47,17 @@ describe('dayQualityLabel', () => {
     ]
     const day = makeDay('2025-06-23', cats, withData)
     expect(dayQualityLabel(day, WS, WE)).toBe('Scattered day')
+  })
+
+  it('defaults to "Mixed day" when a day with data matches no pattern', () => {
+    // focus 8 (44% share, not >4h), meeting 4, comms 3, adhoc 3 -> no rule fits
+    const cats = [
+      ...Array(8).fill('focus'),
+      ...Array(4).fill('meeting'),
+      ...Array(3).fill('comms'),
+      ...Array(3).fill('possible-adhoc'),
+    ]
+    expect(dayQualityLabel(makeDay('2025-06-23', cats, withData), WS, WE)).toBe('Mixed day')
   })
 
   it('returns null for a day with no data', () => {

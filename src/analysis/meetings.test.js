@@ -3,7 +3,7 @@ import {
   topConsumers,
   backToBack,
   fragmentation,
-  recovery,
+  interMeetingGaps,
   longestMeetingBlock,
 } from './meetings.js'
 
@@ -76,24 +76,35 @@ describe('fragmentation', () => {
   })
 })
 
-describe('recovery', () => {
-  it('averages gaps and buckets the distribution', () => {
+describe('interMeetingGaps', () => {
+  it('buckets real gaps by usefulness and totals time per bucket', () => {
     const days = [
       day(KEY, [
         ev('A', KEY, '09:00', '09:30'),
-        ev('B', KEY, '09:35', '10:05'), // 5 min gap -> under10
-        ev('C', KEY, '10:25', '10:55'), // 20 min gap -> between
-        ev('D', KEY, '12:00', '12:30'), // 65 min gap -> over30
+        ev('B', KEY, '09:30', '10:00'), // 0 min -> back-to-back, excluded
+        ev('C', KEY, '10:15', '10:45'), // 15 min -> too short
+        ev('D', KEY, '11:10', '11:40'), // 25 min -> short
+        ev('E', KEY, '12:25', '12:55'), // 45 min -> comfortable
+        ev('F', KEY, '14:00', '14:30'), // 65 min -> long
       ]),
     ]
-    const r = recovery(days)
-    expect(r.totalGaps).toBe(3)
-    expect(r.distribution).toEqual({ under10: 1, between: 1, over30: 1 })
-    expect(r.averageGapMinutes).toBe(Math.round((5 + 20 + 65) / 3))
+    const r = interMeetingGaps(days)
+    expect(r.totalGaps).toBe(4) // 0-min back-to-back excluded
+    const get = (k) => r.buckets.find((b) => b.key === k)
+    expect(get('tooShort')).toMatchObject({ count: 1, minutes: 15 })
+    expect(get('short')).toMatchObject({ count: 1, minutes: 25 })
+    expect(get('comfortable')).toMatchObject({ count: 1, minutes: 45 })
+    expect(get('long')).toMatchObject({ count: 1, minutes: 65 })
+    expect(r.tooShortCount).toBe(1)
+    expect(r.tooShortMinutes).toBe(15)
   })
 
-  it('returns zero average with no gaps', () => {
-    expect(recovery([day(KEY, [ev('A', KEY, '09:00', '09:30')])]).averageGapMinutes).toBe(0)
+  it('returns no gaps when meetings are absent or back-to-back only', () => {
+    const r = interMeetingGaps([
+      day(KEY, [ev('A', KEY, '09:00', '09:30'), ev('B', KEY, '09:30', '10:00')]),
+    ])
+    expect(r.totalGaps).toBe(0)
+    expect(r.tooShortCount).toBe(0)
   })
 })
 

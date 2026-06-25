@@ -72,10 +72,16 @@ describe('normalizeCalendarEvents', () => {
 describe('normalizeTeamsMessages', () => {
   it('maps createdDateTime to a millisecond timestamp tagged teams', () => {
     const out = normalizeTeamsMessages([
-      { id: 'm', createdDateTime: '2025-06-24T11:03:22Z', chatId: 'chat_abc' },
+      {
+        id: 'm',
+        createdDateTime: '2025-06-24T11:03:22Z',
+        chatId: 'chat_abc',
+        from: { user: { id: 'user_123' } },
+      },
     ])
     expect(out[0].source).toBe('teams')
     expect(out[0].chatId).toBe('chat_abc')
+    expect(out[0].senderId).toBe('user_123')
     expect(out[0].timestamp).toBe(Date.parse('2025-06-24T11:03:22Z'))
   })
 
@@ -87,10 +93,11 @@ describe('normalizeTeamsMessages', () => {
 describe('normalizeSlackMessages', () => {
   it('maps ts seconds to a millisecond timestamp tagged slack', () => {
     const out = normalizeSlackMessages([
-      { ts: '1750762800.000100', channel: 'C012AB3EF' },
+      { ts: '1750762800.000100', channel: 'C012AB3EF', user: 'U012AB3CD' },
     ])
     expect(out[0].source).toBe('slack')
     expect(out[0].channel).toBe('C012AB3EF')
+    expect(out[0].senderId).toBe('U012AB3CD')
     expect(out[0].timestamp).toBe(1750762800000)
   })
 

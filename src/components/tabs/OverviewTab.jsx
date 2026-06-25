@@ -1,12 +1,12 @@
-// Overview tab: headline cards, time breakdown (with day-quality tags),
-// end-of-day overrun, and the focus-rate sparkline.
+// Overview tab: headline cards, time breakdown (with day-quality tags) and
+// end-of-day overrun. (The focus-rate trend sparkline was removed — the Focus
+// Rate card's "vs last week" indicator already conveys that trend.)
 
 import { useMemo } from 'react'
 import InsightCards from '../InsightCards.jsx'
 import TimeBreakdown from '../panels/TimeBreakdown.jsx'
 import EndOfDayOverrun from '../panels/EndOfDayOverrun.jsx'
-import FocusRateTrend from '../panels/FocusRateTrend.jsx'
-import { dayQualityLabel, endOfDayOverrun, perDayFocusRate } from '../../analysis/overview.js'
+import { dayQualityLabel, endOfDayOverrun } from '../../analysis/overview.js'
 
 export default function OverviewTab({ insights, trends, days, workingStart, workingEnd, onSelectDay }) {
   const qualityLabels = useMemo(() => {
@@ -19,10 +19,6 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
   }, [days, workingStart, workingEnd])
 
   const overrun = useMemo(() => endOfDayOverrun(days, workingEnd), [days, workingEnd])
-  const rateTrend = useMemo(
-    () => perDayFocusRate(days, workingStart, workingEnd),
-    [days, workingStart, workingEnd],
-  )
 
   return (
     <>
@@ -30,7 +26,6 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
       <div className="panels">
         <TimeBreakdown perDay={insights.perDay} onSelectDay={onSelectDay} qualityLabels={qualityLabels} />
         <EndOfDayOverrun overrun={overrun} workingEnd={workingEnd} />
-        <FocusRateTrend trend={rateTrend} />
       </div>
     </>
   )

@@ -12,8 +12,8 @@ const WS = '09:00'
 const WE = '18:00'
 const KEY = '2025-06-23' // Monday
 
-function msg(dateKey, hhmm, source, conv) {
-  const m = { timestamp: new Date(`${dateKey}T${hhmm}:00`).getTime(), source }
+function msg(dateKey, hhmm, source, conv, senderId) {
+  const m = { timestamp: new Date(`${dateKey}T${hhmm}:00`).getTime(), source, senderId }
   if (source === 'slack') m.channel = conv
   else m.chatId = conv
   return m
@@ -96,14 +96,15 @@ describe('quietestHour', () => {
 })
 
 describe('responsePattern', () => {
-  it('buckets gaps within a conversation thread', () => {
+  it('buckets reply gaps where the sender changes', () => {
+    // alternating senders A/B in one channel => every gap is a response event
     const messages = [
-      msg(KEY, '09:00', 'slack', 'c1'),
-      msg(KEY, '09:02', 'slack', 'c1'), // 2 min -> immediate
-      msg(KEY, '09:20', 'slack', 'c1'), // 18 min -> considered
-      msg(KEY, '10:30', 'slack', 'c1'), // 70 min -> async
-      msg(KEY, '11:00', 'slack', 'c1'), // 30 min -> considered
-      msg(KEY, '11:03', 'slack', 'c1'), // 3 min -> immediate
+      msg(KEY, '09:00', 'slack', 'c1', 'B'),
+      msg(KEY, '09:02', 'slack', 'c1', 'A'), // 2 min -> immediate
+      msg(KEY, '09:20', 'slack', 'c1', 'B'), // 18 min -> considered
+      msg(KEY, '10:30', 'slack', 'c1', 'A'), // 70 min -> async
+      msg(KEY, '11:00', 'slack', 'c1', 'B'), // 30 min -> considered
+      msg(KEY, '11:03', 'slack', 'c1', 'A'), // 3 min -> immediate
     ]
     const r = responsePattern([day(KEY, messages)], 3)
     expect(r.sufficient).toBe(true)
@@ -111,9 +112,22 @@ describe('responsePattern', () => {
     expect(r.immediate + r.considered + r.async).toBeGreaterThanOrEqual(99)
   })
 
-  it('reports insufficient data below the sample threshold', () => {
-    const r = responsePattern([day(KEY, [msg(KEY, '09:00', 'slack', 'c1')])], 5)
-    expect(r.sufficient).toBe(false)
+  it('ignores consecutive messages from the same sender', () => {
+    const messages = [
+      msg(KEY, '09:00', 'slack', 'c1', 'A'),
+      msg(KEY, '09:02', 'slack', 'c1', 'A'),
+      msg(KEY, '09:04', 'slack', 'c1', 'A'),
+    ]
+    const r = responsePattern([day(KEY, messages)], 1)
+    expect(r.sufficient).toBe(false) // no sender changes -> 0 response events
+  })
+
+  it('reports insufficient data below the 20-pair threshold by default', () => {
+    const messages = [
+      msg(KEY, '09:00', 'slack', 'c1', 'B'),
+      msg(KEY, '09:02', 'slack', 'c1', 'A'),
+    ]
+    expect(responsePattern([day(KEY, messages)]).sufficient).toBe(false)
   })
 })
 

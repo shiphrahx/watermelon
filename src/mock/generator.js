@@ -86,11 +86,16 @@ export const PROFILE_SEQUENCE = [
 // Meeting templates per profile. Each: [subject, startMin, endMin, response, online].
 // Every profile includes exactly one declined meeting (to verify the filter).
 const M = (h, m) => h * 60 + m
+// Meeting templates per profile. Designed so the week contains realistic
+// scheduling pressure: heavy-meetings & mixed have back-to-back blocks (gap
+// < 5 min), and mixed/comms-heavy/heavy have inter-meeting gaps under 20 min
+// (so the fragmentation panel is non-empty).
 const MEETINGS = {
   'heavy-meetings': [
+    // 3 morning meetings with gaps under 10 minutes between them.
     ['Daily standup', M(9, 0), M(9, 30), 'accepted', true],
-    ['Sprint planning', M(9, 30), M(10, 30), 'accepted', true],
-    ['Design review', M(10, 30), M(11, 30), 'accepted', true],
+    ['Sprint planning', M(9, 30), M(10, 30), 'accepted', true], // 0-min gap (back-to-back)
+    ['Design review', M(10, 35), M(11, 30), 'accepted', true], // 5-min gap (< 10, < 20)
     ['Stakeholder sync', M(14, 0), M(14, 30), 'accepted', false],
     ['Roadmap review', M(15, 0), M(16, 0), 'organizer', true],
     ['Vendor pitch', M(16, 30), M(17, 0), 'declined', false],
@@ -101,12 +106,14 @@ const MEETINGS = {
   ],
   'comms-heavy': [
     ['Daily standup', M(9, 30), M(10, 0), 'accepted', true],
+    ['Triage sync', M(10, 10), M(10, 40), 'accepted', true], // 10-min gap (< 20)
     ['1:1 with manager', M(15, 0), M(15, 30), 'accepted', true],
     ['Lunch & learn', M(12, 30), M(13, 0), 'declined', false],
   ],
   mixed: [
     ['Daily standup', M(9, 30), M(10, 0), 'accepted', true],
-    ['Project review', M(11, 0), M(12, 0), 'accepted', true],
+    ['Discovery call', M(10, 15), M(11, 0), 'accepted', true], // 15-min gap (< 20)
+    ['Project review', M(11, 0), M(12, 0), 'accepted', true], // 0-min gap (back-to-back)
     ['Afternoon catch-up', M(14, 30), M(15, 0), 'accepted', false],
     ['External webinar', M(16, 0), M(16, 30), 'declined', false],
   ],
@@ -123,6 +130,14 @@ const TEAMS_CHATS = ['chat_abc', 'chat_def', 'chat_ghi']
 const SLACK_USER = 'U012AB3CD'
 const SLACK_CHANNELS = ['C012AB3EF', 'C034CD5GH', 'C056EF7IJ'] // 3+ channels
 const SLACK_DM = 'D078GH9KL' // DM channel (different format)
+
+// Other participants — used to seed incoming messages so the user's replies can
+// be recognised as responses to someone else (not just consecutive self-sends).
+const OTHER_SLACK_USERS = ['U999AAA01', 'U888BBB02']
+const OTHER_TEAMS_USERS = [
+  { displayName: 'Dev A', id: 'user_777' },
+  { displayName: 'PM B', id: 'user_888' },
+]
 
 const TEAMS_TEXTS = [
   'Just reviewing the PR now',
@@ -181,26 +196,85 @@ function makeAllDayEvent(date) {
   }
 }
 
-function makeTeamsMessage(date, n, instant) {
+function makeTeamsMessage(date, n, instant, sender = TEAMS_USER, chatId) {
   const text = TEAMS_TEXTS[n % TEAMS_TEXTS.length]
   return {
     id: `tmsg_${dateKeyOf(date)}_${pad(n)}`,
     createdDateTime: instant.toISOString(),
-    from: { user: { displayName: TEAMS_USER.displayName, id: TEAMS_USER.id } },
+    from: { user: { displayName: sender.displayName, id: sender.id } },
     body: { content: text, contentType: 'text' },
-    chatId: TEAMS_CHATS[n % TEAMS_CHATS.length],
+    chatId: chatId || TEAMS_CHATS[n % TEAMS_CHATS.length],
   }
 }
 
-function makeSlackMessage(date, n, instant, channel) {
+function makeSlackMessage(date, n, instant, channel, user = SLACK_USER) {
   const text = SLACK_TEXTS[n % SLACK_TEXTS.length]
   return {
     ts: (instant.getTime() / 1000).toFixed(6),
-    user: SLACK_USER,
+    user,
     text,
     channel,
     type: 'message',
   }
+}
+
+// Target number of context switches (15-min windows touching 3+ conversations)
+// per profile. comms-heavy is highest; focus-day has none.
+const CONTEXT_SWITCHES = {
+  'comms-heavy': 7,
+  mixed: 5,
+  'heavy-meetings': 4,
+  light: 2,
+  'focus-day': 0,
+}
+const BURST_SLOTS = [M(9, 0), M(9, 30), M(10, 0), M(10, 30), M(11, 0), M(11, 30), M(13, 30), M(14, 0)]
+
+// Each burst emits 3 messages in 3 distinct conversations within one 15-minute
+// window — counted as exactly one context switch.
+function buildContextBursts(date, profile) {
+  const k = CONTEXT_SWITCHES[profile] ?? 0
+  const teams = []
+  const slack = []
+  const key = dateKeyOf(date)
+  for (let i = 0; i < k; i++) {
+    const slot = BURST_SLOTS[i % BURST_SLOTS.length]
+    slack.push(makeSlackMessage(date, 800 + i * 3, localAt(date, slot + 2), `CB_${key}_${i}_a`))
+    teams.push(makeTeamsMessage(date, 800 + i * 3 + 1, localAt(date, slot + 6), TEAMS_USER, `chat_b_${key}_${i}`))
+    slack.push(makeSlackMessage(date, 800 + i * 3 + 2, localAt(date, slot + 10), `CB_${key}_${i}_c`))
+  }
+  return { teams, slack }
+}
+
+// Build incoming/reply thread pairs for a day. Each pair is a message from
+// another user followed by the user's reply after a chosen gap, giving a
+// deterministic mix of immediate / considered / async responses.
+function buildReplyThreads(date, dayIndex) {
+  const teams = []
+  const slack = []
+  const specs = [
+    { startMin: M(13, 30), gap: 2, platform: 'slack' }, // immediate (< 5)
+    { startMin: M(13, 50), gap: 12, platform: 'teams' }, // considered (5–30)
+    { startMin: M(14, 10), gap: 45, platform: 'slack' }, // async (> 30)
+    { startMin: M(16, 0), gap: 3, platform: 'teams' }, // immediate (< 5)
+  ]
+  const key = dateKeyOf(date)
+  specs.forEach((s, i) => {
+    const t0 = localAt(date, s.startMin)
+    const t1 = localAt(date, s.startMin + s.gap)
+    if (s.platform === 'slack') {
+      // Dedicated thread channel so the only sender change is the reply itself.
+      const channel = `CT_${key}_${i}`
+      const other = OTHER_SLACK_USERS[i % OTHER_SLACK_USERS.length]
+      slack.push(makeSlackMessage(date, 900 + i, t0, channel, other))
+      slack.push(makeSlackMessage(date, 920 + i, t1, channel, SLACK_USER))
+    } else {
+      const chatId = `chat_t_${key}_${i}`
+      const other = OTHER_TEAMS_USERS[i % OTHER_TEAMS_USERS.length]
+      teams.push(makeTeamsMessage(date, 900 + i, t0, other, chatId))
+      teams.push(makeTeamsMessage(date, 920 + i, t1, TEAMS_USER, chatId))
+    }
+  })
+  return { teams, slack }
 }
 
 // Evenly spread `count` instants across [startMin, endMin) on `date`.
@@ -296,6 +370,21 @@ export function generateDay(date, profile, options = {}) {
     })
   }
 
+  // --- Context-switch bursts ---
+  // Deterministically seed 15-minute windows that touch 3+ distinct
+  // conversations, so the context-switching panel reflects realistic behaviour
+  // (comms-heavy days highest, focus days lowest).
+  const bursts = buildContextBursts(date, profile)
+  teamsMessages.push(...bursts.teams)
+  slackMessages.push(...bursts.slack)
+
+  // --- Reply threads (incoming message from another user -> the user's reply) ---
+  // Seeds realistic response-time data: a deterministic mix of immediate
+  // (< 5 min), considered (5–30 min) and async (30 min+) replies.
+  const threads = buildReplyThreads(date, dayIndex)
+  teamsMessages.push(...threads.teams)
+  slackMessages.push(...threads.slack)
+
   // --- Out-of-hours messages (excluded from the report) ---
   if (outOfHours) {
     teamsMessages.push(makeTeamsMessage(date, tN++, localAt(date, M(8, 30))))
@@ -322,9 +411,26 @@ export function recentWorkingDays(today, count = 10) {
   return days
 }
 
-// Build the full deterministic dataset for the last 10 working days.
+// Friday of the working week containing `date`.
+function weekFriday(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const dow = d.getDay() // 0 Sun .. 6 Sat
+  const toMonday = dow === 0 ? -6 : 1 - dow
+  d.setDate(d.getDate() + toMonday + 4) // Monday + 4 = Friday
+  return d
+}
+
+// The working days the dataset covers: anchored on the current week's Friday so
+// the whole current week (Mon–Fri) always has data, going back far enough to
+// total PROFILE_SEQUENCE.length days. Oldest first.
+export function datasetDays(today, count = PROFILE_SEQUENCE.length) {
+  return recentWorkingDays(weekFriday(today), count)
+}
+
+// Build the full deterministic dataset covering the current week plus enough
+// prior working days to total PROFILE_SEQUENCE.length.
 export function buildRecentDataset(today) {
-  const days = recentWorkingDays(today, PROFILE_SEQUENCE.length)
+  const days = datasetDays(today)
   const calendarEvents = []
   const teamsMessages = []
   const slackMessages = []

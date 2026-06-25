@@ -2,10 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
 import EndOfDayOverrun from './EndOfDayOverrun.jsx'
-import FocusRateTrend from './FocusRateTrend.jsx'
 import BackToBack from './BackToBack.jsx'
 import Fragmentation from './Fragmentation.jsx'
-import RecoveryTime from './RecoveryTime.jsx'
+import InterMeetingGaps from './InterMeetingGaps.jsx'
 import LongestMeetingBlock from './LongestMeetingBlock.jsx'
 import FocusBlockDistribution from './FocusBlockDistribution.jsx'
 import MorningAfternoon from './MorningAfternoon.jsx'
@@ -19,49 +18,49 @@ import ResponsePattern from './ResponsePattern.jsx'
 import TeamsVsSlack from './TeamsVsSlack.jsx'
 
 describe('EndOfDayOverrun', () => {
-  it('summarises days that ran over', () => {
-    render(
+  it('shows only the days that ran over, with no empty rows or dashes', () => {
+    const { container } = render(
       <EndOfDayOverrun
         workingEnd="18:00"
         overrun={{
           totalDays: 5,
-          daysOver: 3,
-          perDay: [{ dateKey: '2025-06-23', weekday: 'Monday', overrunMinutes: 40, displayMinutes: 40 }],
-        }}
-      />,
-    )
-    expect(screen.getByText(/past 18:00 on 3 of 5 days/)).toBeInTheDocument()
-  })
-
-  it('congratulates a clean week', () => {
-    render(<EndOfDayOverrun workingEnd="18:00" overrun={{ totalDays: 5, daysOver: 0, perDay: [] }} />)
-    expect(screen.getByText(/stayed within your working hours every day/)).toBeInTheDocument()
-  })
-})
-
-describe('FocusRateTrend', () => {
-  it('labels the high and low points', () => {
-    render(
-      <FocusRateTrend
-        trend={{
-          rows: [
-            { dateKey: '2025-06-23', weekday: 'Monday', focusRate: 20 },
-            { dateKey: '2025-06-24', weekday: 'Tuesday', focusRate: 80 },
+          daysOver: 1,
+          perDay: [
+            { dateKey: '2025-06-23', weekday: 'Monday', overrunMinutes: 40, displayMinutes: 40 },
+            { dateKey: '2025-06-24', weekday: 'Tuesday', overrunMinutes: 0, displayMinutes: 0 },
+            { dateKey: '2025-06-25', weekday: 'Wednesday', overrunMinutes: 0, displayMinutes: 0 },
           ],
-          high: { weekday: 'Tuesday', focusRate: 80 },
-          low: { weekday: 'Monday', focusRate: 20 },
         }}
       />,
     )
-    expect(screen.getByText(/High: Tuesday 80%/)).toBeInTheDocument()
-    expect(screen.getByText(/Low: Monday 20%/)).toBeInTheDocument()
+    expect(screen.getByText(/past 18:00 on 1 of 5 days/)).toBeInTheDocument()
+    // only the overrun day is a row
+    expect(container.querySelectorAll('.hbar-row')).toHaveLength(1)
+    expect(screen.getByText('Monday')).toBeInTheDocument()
+    expect(screen.queryByText('Tuesday')).toBeNull()
+    expect(container.textContent).not.toContain('—')
   })
 
-  it('shows an empty state', () => {
-    render(<FocusRateTrend trend={{ rows: [] }} />)
-    expect(screen.getByText(/No focus data/)).toBeInTheDocument()
+  it('shows only the positive message and no rows for a clean week', () => {
+    const { container } = render(
+      <EndOfDayOverrun
+        workingEnd="18:00"
+        overrun={{
+          totalDays: 5,
+          daysOver: 0,
+          perDay: [
+            { dateKey: '2025-06-23', weekday: 'Monday', overrunMinutes: 0, displayMinutes: 0 },
+            { dateKey: '2025-06-24', weekday: 'Tuesday', overrunMinutes: 0, displayMinutes: 0 },
+          ],
+        }}
+      />,
+    )
+    expect(screen.getByText(/stayed within your working hours every day/)).toBeInTheDocument()
+    expect(container.querySelectorAll('.hbar-row')).toHaveLength(0)
+    expect(container.textContent).not.toContain('—')
   })
 })
+
 
 describe('BackToBack', () => {
   it('shows the rate and pairs', () => {
@@ -100,15 +99,32 @@ describe('Fragmentation', () => {
   })
 })
 
-describe('RecoveryTime', () => {
-  it('shows the average gap and distribution', () => {
+describe('InterMeetingGaps', () => {
+  it('leads with the distribution and a recoverable-time summary, no average', () => {
     render(
-      <RecoveryTime
-        recovery={{ averageGapMinutes: 22, totalGaps: 20, distribution: { under10: 4, between: 7, over30: 9 } }}
+      <InterMeetingGaps
+        gaps={{
+          totalGaps: 8,
+          tooShortCount: 3,
+          tooShortMinutes: 45,
+          buckets: [
+            { key: 'tooShort', label: 'Too short to use', count: 3, minutes: 45 },
+            { key: 'short', label: 'Short', count: 2, minutes: 50 },
+            { key: 'comfortable', label: 'Comfortable', count: 2, minutes: 90 },
+            { key: 'long', label: 'Long', count: 1, minutes: 65 },
+          ],
+        }}
       />,
     )
-    expect(screen.getByText(/22 minutes/)).toBeInTheDocument()
-    expect(screen.getByText('Under 10 min')).toBeInTheDocument()
+    expect(screen.getByText('Inter-meeting gaps')).toBeInTheDocument()
+    expect(screen.getByText('Too short to use')).toBeInTheDocument()
+    expect(screen.getByText(/3 gaps were too short to use, costing you 45m of recoverable time/)).toBeInTheDocument()
+    expect(screen.queryByText(/Average/)).toBeNull()
+  })
+
+  it('shows an empty state with no gaps', () => {
+    render(<InterMeetingGaps gaps={{ totalGaps: 0, buckets: [] }} />)
+    expect(screen.getByText(/No gaps between meetings/)).toBeInTheDocument()
   })
 })
 
@@ -123,13 +139,15 @@ describe('LongestMeetingBlock', () => {
 })
 
 describe('FocusBlockDistribution', () => {
-  it('summarises blocks and average', () => {
+  it('uses the new title, subtitle, and descriptive row labels', () => {
     render(
       <FocusBlockDistribution
         distribution={{
           buckets: [
-            { key: 'under20', label: 'Under 20 min', counted: false, count: 0, minutes: 0 },
-            { key: '20to30', label: '20–30 min', counted: true, count: 4, minutes: 120 },
+            { key: 'under20', counted: false, count: 2, minutes: 0 },
+            { key: '20to30', counted: true, count: 4, minutes: 120 },
+            { key: '30to60', counted: true, count: 3, minutes: 130 },
+            { key: 'over60', counted: true, count: 1, minutes: 80 },
           ],
           totalMinutes: 310,
           totalBlocks: 8,
@@ -137,6 +155,10 @@ describe('FocusBlockDistribution', () => {
         }}
       />,
     )
+    expect(screen.getByText('How your focus time is structured')).toBeInTheDocument()
+    expect(screen.getByText(/long uninterrupted blocks is more valuable/)).toBeInTheDocument()
+    expect(screen.getByText('Under 20 min — not counted')).toBeInTheDocument()
+    expect(screen.getByText('Over 60 min — deep blocks')).toBeInTheDocument()
     expect(screen.getByText(/came in 8 blocks, averaging 39 minutes/)).toBeInTheDocument()
   })
 
@@ -147,25 +169,39 @@ describe('FocusBlockDistribution', () => {
 })
 
 describe('MorningAfternoon', () => {
-  it('labels the stronger half', () => {
+  it('labels the stronger half, shows the subtitle and lunch note', () => {
     render(
       <MorningAfternoon
-        split={{ morningMinutes: 192, afternoonMinutes: 118, morningPct: 62, afternoonPct: 38, better: 'morning' }}
+        split={{
+          morningMinutes: 192,
+          afternoonMinutes: 118,
+          lunchMinutes: 30,
+          morningPct: 62,
+          afternoonPct: 38,
+          better: 'morning',
+        }}
       />,
     )
     expect(screen.getByText('You focus better in the mornings.')).toBeInTheDocument()
     expect(screen.getByText('62%')).toBeInTheDocument()
+    expect(screen.getByText(/Total focus time across the selected period/)).toBeInTheDocument()
+    expect(screen.getByText(/Lunch \(12:00–13:00\)/)).toBeInTheDocument()
   })
 })
 
 describe('FocusConsistency', () => {
-  it('renders the verdict and dot plot rows', () => {
+  it('renders the verdict, explanation and a time axis', () => {
     render(
       <FocusConsistency
         consistency={{ level: 'low', perDay: [{ dateKey: 'a', weekday: 'Monday', starts: [600] }] }}
       />,
     )
     expect(screen.getByText(/focus time is consistent/)).toBeInTheDocument()
+    expect(screen.getByText(/Each dot marks the start time of a focus block/)).toBeInTheDocument()
+    // axis ticks at 09:00, 12:00, 15:00, 18:00
+    for (const t of ['09:00', '12:00', '15:00', '18:00']) {
+      expect(screen.getByText(t)).toBeInTheDocument()
+    }
   })
 })
 
@@ -183,13 +219,32 @@ describe('MessageVolumeByHour', () => {
       <MessageVolumeByHour
         volume={{
           hours: [{ startMinute: 540, label: '09:00–10:00', teams: 3, slack: 1, total: 4 }],
-          busiest: { label: '09:00–10:00', total: 4 },
+          busiest: { startMinute: 540, label: '09:00–10:00', total: 4 },
         }}
       />,
     )
     expect(screen.getByText(/Busiest hour: 09:00–10:00/)).toBeInTheDocument()
     expect(screen.getByText('Teams')).toBeInTheDocument()
     expect(screen.getByText('Slack')).toBeInTheDocument()
+  })
+
+  it('renders bar lengths proportional to message count (issue #7)', () => {
+    const { container } = render(
+      <MessageVolumeByHour
+        volume={{
+          hours: [
+            { startMinute: 540, label: '09:00–10:00', teams: 10, slack: 5, total: 15 },
+            { startMinute: 600, label: '10:00–11:00', teams: 3, slack: 0, total: 3 },
+            { startMinute: 660, label: '11:00–12:00', teams: 0, slack: 0, total: 0 },
+          ],
+          busiest: { startMinute: 540, label: '09:00–10:00', total: 15 },
+        }}
+      />,
+    )
+    const bars = container.querySelectorAll('.vol-bar')
+    expect(bars[0].style.width).toBe('100%') // busiest -> full width
+    expect(bars[1].style.width).toBe('20%') // 3/15
+    expect(bars[2].style.width).toBe('0%') // no messages
   })
 })
 
@@ -211,13 +266,25 @@ describe('MeetingMultitasking', () => {
 })
 
 describe('ContextSwitching', () => {
-  it('totals the switches', () => {
+  it('explains the definition and frames high counts', () => {
     render(
       <ContextSwitching
         switching={{ perDay: [{ dateKey: 'a', weekday: 'Monday', count: 6 }], total: 17 }}
       />,
     )
-    expect(screen.getByText(/switched context 17 times/)).toBeInTheDocument()
+    expect(screen.getByText(/3 or more different channels or chats/)).toBeInTheDocument()
+    expect(screen.getByText(/High context switching this week/)).toBeInTheDocument()
+  })
+
+  it('frames low and moderate counts differently', () => {
+    const { rerender } = render(
+      <ContextSwitching switching={{ perDay: [{ dateKey: 'a', weekday: 'Monday', count: 2 }], total: 3 }} />,
+    )
+    expect(screen.getByText(/Low context switching/)).toBeInTheDocument()
+    rerender(
+      <ContextSwitching switching={{ perDay: [{ dateKey: 'a', weekday: 'Monday', count: 6 }], total: 10 }} />,
+    )
+    expect(screen.getByText(/Moderate context switching/)).toBeInTheDocument()
   })
 })
 
@@ -236,7 +303,7 @@ describe('ResponsePattern', () => {
 
   it('shows insufficient-data message', () => {
     render(<ResponsePattern pattern={{ sufficient: false }} />)
-    expect(screen.getByText(/Not enough thread data/)).toBeInTheDocument()
+    expect(screen.getByText(/Not enough message data/)).toBeInTheDocument()
   })
 })
 

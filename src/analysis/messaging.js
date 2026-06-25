@@ -114,24 +114,28 @@ export function quietestHour(days, workingStart, workingEnd) {
   return quietest
 }
 
-// Response-speed buckets from gaps between consecutive messages in the same
-// conversation. Returns { sufficient:false } when there isn't enough thread data.
-export function responsePattern(days, minSamples = 5) {
+// Response-speed buckets. A "response event" is a message in a conversation
+// that follows a message from a *different* sender (i.e. a reply), bucketed by
+// the gap. Pure self-sends with no preceding message from someone else are not
+// counted. Returns { sufficient:false } below `minSamples` response events.
+export function responsePattern(days, minSamples = 20) {
   const byConv = new Map()
   for (const m of allMessages(days)) {
     const id = conversationId(m)
     if (!byConv.has(id)) byConv.set(id, [])
-    byConv.get(id).push(m.timestamp)
+    byConv.get(id).push(m)
   }
 
   let immediate = 0
   let considered = 0
   let async = 0
   let samples = 0
-  for (const times of byConv.values()) {
-    times.sort((a, b) => a - b)
-    for (let i = 1; i < times.length; i++) {
-      const gapMin = (times[i] - times[i - 1]) / 60000
+  for (const msgs of byConv.values()) {
+    const sorted = [...msgs].sort((a, b) => a.timestamp - b.timestamp)
+    for (let i = 1; i < sorted.length; i++) {
+      // Only count when the sender changes (a reply to someone else).
+      if (sorted[i].senderId && sorted[i].senderId === sorted[i - 1].senderId) continue
+      const gapMin = (sorted[i].timestamp - sorted[i - 1].timestamp) / 60000
       samples++
       if (gapMin < 5) immediate++
       else if (gapMin <= 30) considered++

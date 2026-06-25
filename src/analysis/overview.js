@@ -24,26 +24,6 @@ function longestRun(blocks, category) {
   return best
 }
 
-// Focus rate per weekday in range — used for the sparkline.
-export function perDayFocusRate(days, workingStart, workingEnd) {
-  const perDay = parseTimeToMinutes(workingEnd) - parseTimeToMinutes(workingStart)
-  const rows = days
-    .filter((d) => isWeekday(d.dateKey))
-    .map((d) => ({
-      dateKey: d.dateKey,
-      weekday: weekdayName(d.dateKey),
-      focusRate: perDay > 0 ? (minutesIn(d.blocks, 'focus') / perDay) * 100 : 0,
-    }))
-
-  let high = null
-  let low = null
-  for (const r of rows) {
-    if (high === null || r.focusRate > high.focusRate) high = r
-    if (low === null || r.focusRate < low.focusRate) low = r
-  }
-  return { rows, high, low }
-}
-
 // One character label per day based on its dominant pattern (or null).
 export function dayQualityLabel(day, workingStart, workingEnd) {
   const perDay = parseTimeToMinutes(workingEnd) - parseTimeToMinutes(workingStart)
@@ -63,7 +43,8 @@ export function dayQualityLabel(day, workingStart, workingEnd) {
   const maxShare = Math.max(focus, meeting, messaging, adhoc) / total
   if (maxShare < 0.4) return 'Scattered day'
 
-  return null
+  // A working day with data that matches no specific pattern still gets a label.
+  return 'Mixed day'
 }
 
 // Last activity (message or meeting end) minute-of-day for a day.
