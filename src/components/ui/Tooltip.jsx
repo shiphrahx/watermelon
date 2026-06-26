@@ -1,4 +1,4 @@
-// Small dark floating popover. Rendered by HoverInfo above the hovered element.
+// Small high-contrast floating popover. Rendered by HoverInfo above the element.
 
 export default function Tooltip({ children, className = '' }) {
   return (
