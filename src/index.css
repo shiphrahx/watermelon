@@ -41,21 +41,6 @@
   color: var(--ink);
 }
 
-/* Dark mode: every token has a dark value. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --accent-soft: #14352a;
-    --ink: #e8edf2;
-    --muted: #9aa3ad;
-    --caption: #6b7280;
-    --line: #2a2f37;
-    --bg: #14171c;
-    --card-bg: #1c2026;
-    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
-    --color-empty: #353b44;
-  }
-}
-
 * {
   box-sizing: border-box;
 }
@@ -1640,9 +1625,6 @@ button.danger:hover {
 /* Pills row + warn pill (#45) */
 .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill--warn { background: #fdeee0; color: #b4632a; }
-@media (prefers-color-scheme: dark) {
-  .pill--warn { background: #3a2a1a; color: #f3b27a; }
-}
 .recurring-row { cursor: pointer; }
 
 /* Day-quality pills with hue per label (#46) */
@@ -1651,12 +1633,6 @@ button.danger:hover {
 .day-pill--reactive { background: #fdeee0; color: #b4632a; }
 .day-pill--scattered,
 .day-pill--mixed { background: #eef0f2; color: var(--muted); }
-@media (prefers-color-scheme: dark) {
-  .day-pill--meeting { background: #1b2740; color: #8fb4f5; }
-  .day-pill--reactive { background: #3a2a1a; color: #f3b27a; }
-  .day-pill--scattered,
-  .day-pill--mixed { background: #262b32; color: var(--muted); }
-}
 .day-tag { /* legacy → match pill */
   display: inline-block;
   font-size: var(--font-caption);
