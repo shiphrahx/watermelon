@@ -126,8 +126,8 @@ cd cloudflare && npx wrangler deploy
 - Design tokens live at the top of `src/index.css`: a strict type scale
   (`--font-hero/value/title/label/caption`), card tokens (`--radius` 16,
   `--card-shadow`, `--card-pad`, `--gap`), accent (`--accent` = focus green) and
-  delta colours, with a full **dark-mode** block (`prefers-color-scheme`). Use
-  only these sizes; weights are 400/600 only; sentence case.
+  delta colours. Use only these sizes; weights are 400/600 only; sentence case.
+  Single light theme.
 - **Inter** is self-hosted via `@fontsource/inter` (no CDN), imported in
   `main.jsx`.
 - Shared UI primitives in `src/components/ui/`: `Card`, `Tooltip`, `HoverInfo`
