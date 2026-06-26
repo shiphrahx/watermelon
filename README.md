@@ -1,129 +1,32 @@
 # 🍉 Watermelon
 
-A single-page React app that analyses your **calendar** and **messaging activity**
-to generate a daily **productivity and focus-time report**.
+[![CI](https://github.com/shiphrahx/watermelon/actions/workflows/ci.yml/badge.svg)](https://github.com/shiphrahx/watermelon/actions/workflows/ci.yml)
+![Status](https://img.shields.io/badge/status-IT'S%20COOOKING%20%F0%9F%8D%B3%F0%9F%94%A5-orange)
+![React](https://img.shields.io/badge/React-18-5B8DEF)
+![Vite](https://img.shields.io/badge/Vite-5-4CAF82)
+![Charts](https://img.shields.io/badge/Recharts-yes-9B8EC4)
+![Tests](https://img.shields.io/badge/tests-337%20passing-1D9E75)
 
-Watermelon connects to Microsoft (calendar + Teams chat) and/or Slack, then
-slices your working day into 30-minute blocks and classifies each one as:
-
-| Category         | Meaning                                                              |
-| ---------------- | -------------------------------------------------------------------- |
-| **Meeting**      | Covered by a calendar event you accepted                             |
-| **Focus**        | No event **and** no messages for ≥ 20 consecutive minutes            |
-| **Comms**        | No event but messages are present                                    |
-| **Possible ad-hoc** | No event; messaging stops abruptly for 30+ min then resumes       |
-
-Both connections are **optional and independent** — the app works with just
-Microsoft connected, just Slack connected, or both.
+> ## 🍳🔥 IT'S COOOKING
+> Watermelon is actively being built. Things move fast and break — come back soon. 🚧
 
 ---
 
-## Features
+**Watermelon** turns your calendar and chat activity into a clear, human-readable picture of how your week actually went — not raw category labels, but the patterns hiding in between.
 
-- **Dashboard** — a plain-English weekly summary, five headline insight cards
-  (deep focus, in meetings, busiest day, most focused day, focus rate) with
-  week-over-week trends, and insight panels: time breakdown per day, best focus
-  windows, top time consumers, and focus time by day. Defaults to **this week**.
-- **Day view** — a single day in detail: summary sentence, vertical colour-coded
-  timeline, and day stats (focus rate, meeting time, longest focus block, first
-  message). Reached by clicking any day on the dashboard.
-- **Settings** — connect/disconnect accounts, set working hours, set the Slack proxy URL
+## What it tells you
 
-Category labels shown to users are human-readable (e.g. *Deep focus*,
-*Responding & messaging*, *Likely unscheduled calls*) — raw internal keys never
-appear in the UI.
+- 🎯 **Where your time goes** — deep focus, meetings, messaging, and shallow work
+- 🧠 **When you focus best** — your strongest hours, and how fragmented your days are
+- 📅 **What meetings cost you** — cumulative time on recurring meetings, back-to-back load, and the ones you quietly multitask through
+- 💬 **How you communicate** — message volume, context switching, and response habits
+- 📈 **Trends over time** — focus rate, goals, and how this week stacks up against your own past
+- 📄 **A clean weekly report** you can export to PDF
 
-Tokens are stored in `localStorage`. All API calls are made from the browser,
-except Slack, which is proxied through a Cloudflare Worker (Slack's API has no
-CORS support).
+## Privacy
+
+Everything is processed in your browser. Only small, aggregated weekly summaries are stored on your device — never your raw messages or event details, and nothing is sent to any third party.
 
 ---
 
-## Tech stack
-
-- React + Vite
-- Plain CSS (no UI framework)
-- `react-router-dom` (HashRouter, for GitHub Pages)
-- `@azure/msal-browser` for Microsoft auth (PKCE)
-- Slack OAuth 2.0 with PKCE
-- Cloudflare Worker proxy for the Slack API
-- Deployed to GitHub Pages via `gh-pages`
-
----
-
-## Quick start (local development)
-
-```bash
-npm install
-cp .env.example .env     # fill in your client IDs / proxy URL
-npm run dev
-```
-
-Open the printed local URL. Go to **Settings** to connect Microsoft and/or Slack.
-
-### Environment variables
-
-See `.env.example`. All are **public** identifiers (this is a browser-only PKCE
-app — there are no secrets in the frontend):
-
-| Var | Description |
-| --- | --- |
-| `VITE_MS_CLIENT_ID`   | Azure AD application (client) ID |
-| `VITE_MS_AUTHORITY`   | `https://login.microsoftonline.com/common` (or your tenant) |
-| `VITE_SLACK_CLIENT_ID`| Slack app client ID |
-| `VITE_SLACK_PROXY_URL`| Default Cloudflare Worker URL (also editable in Settings) |
-
----
-
-## Setup & deployment
-
-Full step-by-step instructions — Azure AD registration, Slack app registration,
-Cloudflare Worker deployment, and GitHub Pages setup — are in **[DEPLOY.md](./DEPLOY.md)**.
-
-Short version:
-
-```bash
-# 1. Deploy the Slack proxy worker
-cd cloudflare && npx wrangler deploy
-
-# 2. Build & publish to the gh-pages branch
-npm run deploy
-```
-
-`vite.config.js` sets `base: '/watermelon/'` so asset paths and routing resolve
-at `https://<your-username>.github.io/watermelon/`. If you fork under a
-different repo name, update `base` to match.
-
----
-
-## Project structure
-
-```
-watermelon/
-├── cloudflare/
-│   ├── worker.js          # Slack API CORS proxy
-│   └── wrangler.toml
-├── src/
-│   ├── auth/              # microsoft.js (MSAL), slack.js (OAuth PKCE)
-│   ├── api/               # graph.js, slack.js
-│   ├── analysis/          # classify.js (block classification)
-│   ├── components/        # DateRangePicker, Timeline, SummaryCards
-│   ├── pages/             # Dashboard, DayView, Settings
-│   ├── hooks/             # useProductivityData.js
-│   ├── utils/             # time.js, settings.js
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css
-├── DEPLOY.md
-├── vite.config.js
-└── package.json
-```
-
----
-
-## Notes on the analysis logic
-
-The classification in `src/analysis/classify.js` implements the core rules and
-is intentionally a **starting point** — see the `TODO` comments for where to
-refine the "possible ad-hoc" detection (cross-block silence, per-source
-weighting, message-volume thresholds, confidence scoring).
+🍉 *Made with focus (mostly).*
