@@ -1,46 +1,40 @@
-// The five headline insight cards at the top of the dashboard.
+// The headline KPI row (Overview). Icon badge + label + hero number + delta.
 
+import KpiCard from './ui/KpiCard.jsx'
+import MiniSparkline from './ui/MiniSparkline.jsx'
 import { formatDuration } from '../utils/time.js'
-import TrendIndicator from './TrendIndicator.jsx'
-
-function Card({ label, value, small, trend, children }) {
-  return (
-    <div className="insight-card">
-      <span className="insight-card__label">{label}</span>
-      <span className={`insight-card__value${small ? ' insight-card__value--small' : ''}`}>
-        {value}
-      </span>
-      {trend && <TrendIndicator trend={trend} />}
-      {children}
-    </div>
-  )
-}
+import { getRecentWeeks } from '../storage/history.js'
 
 export default function InsightCards({ insights, trends }) {
   const focusRate = Math.round(insights.focusRate)
+  const focusRateSeries = getRecentWeeks(8).map((w) => w.focusRate)
+
   return (
     <div className="insight-cards">
-      <Card
+      <KpiCard
+        icon="🎯"
         label="Deep focus"
         value={formatDuration(insights.focusMinutes)}
         trend={trends?.focusMinutes}
+        deltaGood={trends?.focusMinutes?.direction === 'up'}
       />
-      <Card
+      <KpiCard
+        icon="📅"
         label="In meetings"
         value={formatDuration(insights.meetingMinutes)}
         trend={trends?.meetingMinutes}
+        deltaGood={trends?.meetingMinutes?.direction === 'down'}
       />
-      <Card
-        label="Busiest day"
-        small
-        value={insights.busiestDay ? insights.busiestDay.weekday : '—'}
+      <KpiCard
+        icon="📈"
+        label="Focus rate"
+        value={`${focusRate}%`}
+        trend={trends?.focusRate}
+        deltaGood={trends?.focusRate?.direction === 'up'}
+        spark={<MiniSparkline values={focusRateSeries} />}
       />
-      <Card
-        label="Most focused day"
-        small
-        value={insights.mostFocusedDay ? insights.mostFocusedDay.weekday : '—'}
-      />
-      <Card label="Focus rate" value={`${focusRate}%`} trend={trends?.focusRate} />
+      <KpiCard icon="🔥" label="Busiest day" small value={insights.busiestDay ? insights.busiestDay.weekday : '—'} />
+      <KpiCard icon="🧠" label="Most focused day" small value={insights.mostFocusedDay ? insights.mostFocusedDay.weekday : '—'} />
     </div>
   )
 }

@@ -1613,3 +1613,9 @@ button.danger:hover {
 @media (max-width: 680px) {
   .split { grid-template-columns: 1fr; }
 }
+
+.kpi__delta-cap { color: var(--muted); font-weight: 400; }
+.insight-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
