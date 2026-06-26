@@ -60,7 +60,15 @@ describe('FocusWindows', () => {
       screen.getByText('Your best focus window is 10:00–11:00 on average across this week.'),
     ).toBeInTheDocument()
     expect(screen.getByText('Average focus time per hour across the selected period')).toBeInTheDocument()
-    expect(screen.getByText('60m avg')).toBeInTheDocument()
+  })
+
+  it('reveals the average on hover (visual-first)', () => {
+    const { container } = render(<FocusWindows focusWindows={focusWindows} />)
+    // no permanent value text at rest
+    expect(screen.queryByText(/avg \d+ min focus/)).toBeNull()
+    const tracks = container.querySelectorAll('.hbar-track-wrap')
+    fireEvent.mouseEnter(tracks[1]) // the 10:00–11:00 slot
+    expect(screen.getByRole('tooltip')).toHaveTextContent('avg 60 min focus')
   })
 
   it('shows an empty state when there is no focus', () => {
