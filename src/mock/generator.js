@@ -3,42 +3,9 @@
 // Produces fake-but-realistic Microsoft Graph calendar events, Teams chat
 // messages and Slack messages whose shapes match the real APIs exactly.
 //
-// Determinism: no Math.random(). All variation comes from a seeded PRNG keyed
-// off the date + profile, so the same date/profile always yields identical data
-// (predictable UI development). The only runtime input is "today", which is
-// passed in explicitly so callers/tests stay deterministic.
-
-// --- Seeded PRNG ----------------------------------------------------------
-
-// djb2 string hash -> 32-bit seed.
-function hashSeed(str) {
-  let h = 5381
-  for (let i = 0; i < str.length; i++) {
-    h = (h * 33) ^ str.charCodeAt(i)
-  }
-  return h >>> 0
-}
-
-// mulberry32 PRNG. Returns a function producing floats in [0, 1).
-function mulberry32(seed) {
-  let a = seed >>> 0
-  return function () {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
-function rngFor(...parts) {
-  return mulberry32(hashSeed(parts.join('|')))
-}
-
-// Deterministic integer in [min, max] inclusive from a PRNG.
-function randInt(rng, min, max) {
-  return min + Math.floor(rng() * (max - min + 1))
-}
+// Determinism: no Math.random(). Output is a pure function of the date +
+// profile, so the same date/profile always yields identical data (predictable
+// UI development). The only runtime input is "today", passed in explicitly.
 
 // --- Date / time helpers --------------------------------------------------
 
@@ -277,45 +244,42 @@ function buildReplyThreads(date, dayIndex) {
   return { teams, slack }
 }
 
-// Evenly spread `count` instants across [startMin, endMin) on `date`.
-function spread(date, startMin, endMin, count) {
-  const out = []
-  if (count <= 0) return out
-  const span = endMin - startMin
-  for (let i = 0; i < count; i++) {
-    const min = startMin + Math.round(((i + 1) * span) / (count + 1))
-    out.push(localAt(date, min))
-  }
-  return out
-}
-
-// Per-profile message intensity per window (rough message counts before the
-// source split). Windows model a realistic daily rhythm.
-const WINDOWS = {
-  preStandup: [M(8, 45), M(9, 15)],
-  morningMeeting: [M(9, 30), M(10, 0)],
-  midMorning: [M(10, 30), M(12, 0)],
-  // lunch 12:30-13:30 is intentionally silent (no window)
-  earlyAfternoon: [M(13, 30), M(14, 30)],
-  lateAfternoon: [M(15, 0), M(17, 0)],
-  tail: [M(17, 0), M(17, 45)],
-}
-
-const INTENSITY = {
-  'heavy-meetings': { preStandup: 3, morningMeeting: 2, midMorning: 1, earlyAfternoon: 2, lateAfternoon: 3, tail: 1 },
-  'focus-day': { preStandup: 2, morningMeeting: 0, midMorning: 0, earlyAfternoon: 1, lateAfternoon: 0, tail: 0 },
-  'comms-heavy': { preStandup: 4, morningMeeting: 2, midMorning: 10, earlyAfternoon: 8, lateAfternoon: 8, tail: 2 },
-  mixed: { preStandup: 3, morningMeeting: 1, midMorning: 4, earlyAfternoon: 3, lateAfternoon: 0, tail: 1 },
-  light: { preStandup: 2, morningMeeting: 0, midMorning: 1, earlyAfternoon: 1, lateAfternoon: 0, tail: 0 },
-}
-
-// Split a count between Teams and Slack. Even day index => Teams-heavy,
-// odd => Slack-heavy, so the dataset varies which tool dominates per day.
-function splitSources(count, dayIndex) {
-  if (count <= 0) return { teams: 0, slack: 0 }
-  const dominantTeams = dayIndex % 2 === 0
-  const teamsCount = dominantTeams ? Math.ceil(count * 0.7) : Math.floor(count * 0.3)
-  return { teams: teamsCount, slack: count - teamsCount }
+// Per-profile messaging-block schedule (minute ranges of dense messaging). The
+// schedule is laid out in non-meeting time and leaves deliberate gaps so the
+// classifier produces a realistic mix of comms, shallow work and deep focus.
+//
+//  - focus-day  : almost no messaging -> long deep-focus stretches
+//  - comms-heavy: near-continuous blocks with small (<=20 min) gaps -> little focus
+//  - mixed/heavy/light: a handful of blocks with focus gaps in between
+const MESSAGING_BLOCKS = {
+  'heavy-meetings': [
+    [M(11, 35), M(12, 0)],
+    [M(13, 30), M(13, 55)],
+    [M(16, 5), M(16, 30)],
+  ],
+  'focus-day': [
+    [M(11, 0), M(11, 20)],
+  ],
+  'comms-heavy': [
+    [M(10, 45), M(11, 15)],
+    [M(11, 25), M(12, 0)],
+    [M(12, 10), M(12, 40)],
+    [M(12, 50), M(13, 25)],
+    [M(13, 35), M(14, 10)],
+    [M(14, 20), M(14, 55)],
+    [M(15, 35), M(16, 10)],
+    [M(16, 20), M(17, 0)],
+  ],
+  mixed: [
+    [M(12, 5), M(12, 30)],
+    [M(13, 0), M(13, 25)],
+    [M(15, 10), M(15, 40)],
+    [M(16, 35), M(17, 0)],
+  ],
+  light: [
+    [M(10, 30), M(10, 50)],
+    [M(14, 0), M(14, 20)],
+  ],
 }
 
 // Generate one realistic day. Returns raw API-shaped arrays.
@@ -337,37 +301,24 @@ export function generateDay(date, profile, options = {}) {
   const slackMessages = []
   let tN = 0
   let sN = 0
-  const intensity = INTENSITY[profile]
 
-  for (const [windowName, [startMin, endMin]] of Object.entries(WINDOWS)) {
-    const baseCount = intensity[windowName] || 0
-    const rng = rngFor(dateKeyOf(date), profile, windowName)
-    // small deterministic ±1 jitter for realism
-    const count = Math.max(0, baseCount + (baseCount > 0 ? randInt(rng, -1, 1) : 0))
-    const { teams, slack } = splitSources(count, dayIndex)
-
-    for (const instant of spread(date, startMin, endMin, teams)) {
-      teamsMessages.push(makeTeamsMessage(date, tN++, instant))
+  // Messaging blocks: dense clusters (a message roughly every 3 minutes) that
+  // classify as "Responding & messaging". The gaps the schedule leaves between
+  // blocks become shallow work (5–20 min) or deep focus (20+ min). The silence
+  // around the blocks (and on quiet profiles) is where deep focus accrues.
+  const slackChannels = [...SLACK_CHANNELS, SLACK_DM] // include a DM
+  for (const [from, to] of MESSAGING_BLOCKS[profile] || []) {
+    let toggle = dayIndex % 2 === 0
+    for (let m = from; m <= to; m += 3) {
+      if (toggle) {
+        teamsMessages.push(makeTeamsMessage(date, tN++, localAt(date, m)))
+      } else {
+        slackMessages.push(
+          makeSlackMessage(date, sN++, localAt(date, m), slackChannels[sN % slackChannels.length]),
+        )
+      }
+      toggle = !toggle
     }
-    spread(date, startMin, endMin, slack).forEach((instant, i) => {
-      // mix channels; include a DM occasionally
-      const channel = i === 0 && slack > 2 ? SLACK_DM : SLACK_CHANNELS[sN % SLACK_CHANNELS.length]
-      slackMessages.push(makeSlackMessage(date, sN++, instant, channel))
-    })
-  }
-
-  // --- Special scenario: possible ad-hoc (mixed profile) ---
-  // Activity 15:00-15:10, then a 50-min silence, then resume 16:00-16:40,
-  // leaving the 15:30-16:00 block empty but bracketed by activity within 30m.
-  if (profile === 'mixed') {
-    for (const instant of spread(date, M(15, 0), M(15, 10), 2)) {
-      teamsMessages.push(makeTeamsMessage(date, tN++, instant))
-    }
-    spread(date, M(16, 0), M(16, 40), 3).forEach((instant) => {
-      slackMessages.push(
-        makeSlackMessage(date, sN++, instant, SLACK_CHANNELS[sN % SLACK_CHANNELS.length]),
-      )
-    })
   }
 
   // --- Context-switch bursts ---
