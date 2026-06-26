@@ -6,4 +6,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/watermelon/',
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy vendors into their own cacheable chunks.
+        manualChunks: {
+          recharts: ['recharts'],
+          react: ['react', 'react-dom', 'react-router-dom'],
+          msal: ['@azure/msal-browser'],
+        },
+      },
+    },
+  },
 })
