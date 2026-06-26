@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  isoWeekKey,
   isWeekend,
   isWeekday,
   mondayOf,
@@ -120,5 +121,22 @@ describe('clampCustomRange', () => {
       startKey: '2025-06-01',
       endKey: '2025-06-10',
     })
+  })
+})
+
+describe('isoWeekKey', () => {
+  it('formats as YYYY-Www', () => {
+    expect(isoWeekKey('2026-06-24')).toMatch(/^\d{4}-W\d{2}$/)
+  })
+  it('gives the same key for days in the same ISO week', () => {
+    // Mon 2026-06-22 .. Sun 2026-06-28 are one ISO week
+    expect(isoWeekKey('2026-06-22')).toBe(isoWeekKey('2026-06-26'))
+  })
+  it('gives different keys for adjacent weeks', () => {
+    expect(isoWeekKey('2026-06-22')).not.toBe(isoWeekKey('2026-06-29'))
+  })
+  it('matches known ISO week numbers', () => {
+    // 2026-01-01 is a Thursday => ISO week 1 of 2026
+    expect(isoWeekKey('2026-01-01')).toBe('2026-W01')
   })
 })

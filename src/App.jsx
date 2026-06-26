@@ -6,6 +6,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { hasSlackRedirectParams, completeSlackLogin } from './auth/slack.js'
 import { initMicrosoft } from './auth/microsoft.js'
 import { toDateKey } from './utils/time.js'
+import { USE_MOCK } from './mock/index.js'
+import PrivacyNotice from './components/PrivacyNotice.jsx'
 
 export default function App() {
   const navigate = useNavigate()
@@ -15,6 +17,12 @@ export default function App() {
   // OAuth callback if we were redirected back with a code.
   useEffect(() => {
     initMicrosoft().catch(() => {})
+
+    // In mock mode, seed a few weeks of history so trend/comparison features
+    // have data on first run. Lazy-loaded to keep it out of the main bundle.
+    if (USE_MOCK) {
+      import('./mock/seedHistory.js').then((m) => m.seedMockHistory()).catch(() => {})
+    }
 
     if (hasSlackRedirectParams()) {
       completeSlackLogin()
@@ -43,6 +51,7 @@ export default function App() {
       </header>
 
       <main className="app__main">
+        <PrivacyNotice />
         <Outlet />
       </main>
 

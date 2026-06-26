@@ -4,11 +4,20 @@
 
 import { useMemo } from 'react'
 import InsightCards from '../InsightCards.jsx'
+import GoalProgress from '../GoalProgress.jsx'
 import TimeBreakdown from '../panels/TimeBreakdown.jsx'
 import EndOfDayOverrun from '../panels/EndOfDayOverrun.jsx'
 import { dayQualityLabel, endOfDayOverrun } from '../../analysis/overview.js'
+import { computeGoalProgress } from '../../analysis/goal.js'
+import { benchmarkWeek } from '../../analysis/benchmark.js'
+import { computeFocusDebt } from '../../analysis/focusDebt.js'
+import { getSettings } from '../../utils/settings.js'
+import { getAllWeeks } from '../../storage/history.js'
+import { isoWeekKey } from '../../utils/ranges.js'
 
 export default function OverviewTab({ insights, trends, days, workingStart, workingEnd, onSelectDay }) {
+  const settings = getSettings()
+
   const qualityLabels = useMemo(() => {
     const map = {}
     for (const d of days) {
@@ -19,10 +28,46 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
   }, [days, workingStart, workingEnd])
 
   const overrun = useMemo(() => endOfDayOverrun(days, workingEnd), [days, workingEnd])
+  const goalProgress = useMemo(
+    () => computeGoalProgress(insights, settings.focusGoalHours),
+    [insights, settings.focusGoalHours],
+  )
+
+  const benchmark = useMemo(() => {
+    if (!days.length) return null
+    return benchmarkWeek(getAllWeeks(), isoWeekKey(days[0].dateKey))
+  }, [days])
+
+  const focusDebt = useMemo(
+    () => computeFocusDebt(insights.perDay, Number(settings.lowFocusThresholdHours) || 1),
+    [insights.perDay, settings.lowFocusThresholdHours],
+  )
+
+  async function handleExport() {
+    try {
+      // Lazy-load jsPDF so it stays out of the main bundle.
+      const { exportWeeklyPdf } = await import('../../export/weeklyPdf.js')
+      exportWeeklyPdf(insights)
+    } catch (err) {
+      console.error(err)
+      alert('Could not generate the PDF. Please try again.')
+    }
+  }
 
   return (
     <>
+      <div className="overview__actions">
+        <button onClick={handleExport}>Export PDF</button>
+      </div>
       <InsightCards insights={insights} trends={trends} />
+      {benchmark && <p className="benchmark">{benchmark}</p>}
+      {focusDebt.streak >= 3 && (
+        <p className="focus-debt">
+          You've had {focusDebt.streak} days in a row with little deep focus — you may be due for a
+          protected block.
+        </p>
+      )}
+      <GoalProgress progress={goalProgress} />
       <div className="panels">
         <TimeBreakdown perDay={insights.perDay} onSelectDay={onSelectDay} qualityLabels={qualityLabels} />
         <EndOfDayOverrun overrun={overrun} workingEnd={workingEnd} />

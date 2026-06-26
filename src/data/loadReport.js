@@ -11,6 +11,8 @@ import {
 import { isMicrosoftConnected } from '../auth/microsoft.js'
 import { isSlackConnected } from '../auth/slack.js'
 import { buildReport } from '../analysis/report.js'
+import { summarise } from '../analysis/classify.js'
+import { applyCorrections } from '../storage/corrections.js'
 import { getSettings } from '../utils/settings.js'
 
 export class NoConnectionError extends Error {
@@ -31,7 +33,7 @@ export async function loadReport(startKey, endKey) {
   const rawTeams = useMicrosoft ? await getTeamsMessages(startKey, endKey) : []
   const rawSlack = useSlack ? await getSlackMessages(startKey, endKey) : []
 
-  return buildReport({
+  const report = buildReport({
     startKey,
     endKey,
     workingStart: workingHoursStart,
@@ -40,4 +42,12 @@ export async function loadReport(startKey, endKey) {
     rawTeams,
     rawSlack,
   })
+
+  // Apply any manual block corrections so day AND week totals reflect them.
+  report.days = report.days.map((d) => ({
+    ...d,
+    blocks: applyCorrections(d.blocks, d.dateKey),
+  }))
+  report.summary = summarise(report.days.flatMap((d) => d.blocks))
+  return report
 }

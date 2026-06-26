@@ -53,17 +53,33 @@ describe('DayTimeline', () => {
     ],
   }
 
-  it('shows the meeting title and a human focus label', () => {
-    render(<DayTimeline day={day} workingStart="09:00" workingEnd="18:00" />)
-    expect(screen.getByText('Daily standup')).toBeInTheDocument()
-    expect(screen.getByText(/Deep focus — 1h/)).toBeInTheDocument()
+  it('shows the meeting title and human block labels per block', () => {
+    render(<DayTimeline day={day} />)
+    expect(screen.getAllByText('Daily standup').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Deep focus').length).toBeGreaterThan(0)
   })
 
   it('never shows raw category keys', () => {
-    const { container } = render(
-      <DayTimeline day={day} workingStart="09:00" workingEnd="18:00" />,
-    )
+    const { container } = render(<DayTimeline day={day} />)
     expect(container.textContent).not.toMatch(/comms|possible-adhoc/)
+  })
+
+  it('opens a reclassify menu and emits the chosen category', () => {
+    const onCorrect = vi.fn()
+    render(<DayTimeline day={day} onCorrect={onCorrect} />)
+    // first block (09:00, meeting) — click to open the menu, choose Deep focus
+    fireEvent.click(screen.getAllByText('Daily standup')[0])
+    fireEvent.click(screen.getByRole('menuitem', { name: /Deep focus/ }))
+    expect(onCorrect).toHaveBeenCalledWith(540, 'focus') // 09:00 = minute 540
+  })
+
+  it('marks a corrected block', () => {
+    const corrected = {
+      ...day,
+      blocks: day.blocks.map((b, i) => (i === 0 ? { ...b, corrected: true } : b)),
+    }
+    render(<DayTimeline day={corrected} />)
+    expect(screen.getByLabelText('manually adjusted')).toBeInTheDocument()
   })
 })
 

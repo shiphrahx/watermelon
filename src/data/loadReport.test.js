@@ -21,6 +21,18 @@ describe('loadReport (mock mode)', () => {
     expect(report.days[0].events.length + report.days[0].messages.length).toBeGreaterThan(0)
   })
 
+  it('applies manual corrections to the report blocks', async () => {
+    localStorage.clear()
+    const { saveCorrection } = await import('../storage/corrections.js')
+    const days = datasetDays(new Date())
+    const key = dateKeyOf(days[days.length - 1])
+    saveCorrection(key, 540, 'meeting') // 09:00 block -> meeting
+    const report = await loadReport(key, key)
+    const block = report.days[0].blocks.find((b) => b.startMinute === 540)
+    expect(block.category).toBe('meeting')
+    expect(block.corrected).toBe(true)
+  })
+
   it('NoConnectionError carries the connect-accounts message', () => {
     const err = new NoConnectionError()
     expect(err).toBeInstanceOf(Error)

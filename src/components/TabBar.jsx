@@ -5,6 +5,7 @@ const TABS = [
   { id: 'meetings', label: 'Meetings' },
   { id: 'focus', label: 'Focus' },
   { id: 'messaging', label: 'Messaging' },
+  { id: 'trends', label: 'Trends' },
 ]
 
 export default function TabBar({ active, onChange, onDayView }) {
