@@ -33,14 +33,14 @@ export function dayQualityLabel(day, workingStart, workingEnd) {
   const focus = minutesIn(blocks, 'focus')
   const meeting = minutesIn(blocks, 'meeting')
   const messaging = minutesIn(blocks, 'comms')
-  const adhoc = minutesIn(blocks, 'possible-adhoc')
+  const shallow = minutesIn(blocks, 'shallow')
   const total = blocks.length * BLOCK_MINUTES || 1
 
   if (focus > 240 && meeting < 120) return 'Protected day'
   if (perDay > 0 && meeting > perDay * 0.5) return 'Meeting day'
   if (messaging > 180 && longestRun(blocks, 'focus') < 30) return 'Reactive day'
 
-  const maxShare = Math.max(focus, meeting, messaging, adhoc) / total
+  const maxShare = Math.max(focus, meeting, messaging, shallow) / total
   if (maxShare < 0.4) return 'Scattered day'
 
   // A working day with data that matches no specific pattern still gets a label.

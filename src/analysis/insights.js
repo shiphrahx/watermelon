@@ -33,7 +33,7 @@ export function computeInsights({ days, workingStart, workingEnd }) {
   const focusMinutes = sumCategory(weekdayDays, 'focus')
   const meetingMinutes = sumCategory(weekdayDays, 'meeting')
   const messagingMinutes = sumCategory(weekdayDays, 'comms')
-  const adhocMinutes = sumCategory(weekdayDays, 'possible-adhoc')
+  const shallowMinutes = sumCategory(weekdayDays, 'shallow')
 
   const totalWorkingMinutes = weekdayDays.length * workingMinutesPerDay
   const focusRate = totalWorkingMinutes > 0 ? (focusMinutes / totalWorkingMinutes) * 100 : 0
@@ -46,7 +46,7 @@ export function computeInsights({ days, workingStart, workingEnd }) {
     focusMinutes,
     meetingMinutes,
     messagingMinutes,
-    adhocMinutes,
+    shallowMinutes,
     totalWorkingMinutes,
     focusRate,
     busiestDay: pickDay(weekdayDays, 'meeting'),
@@ -87,7 +87,7 @@ function buildPerDay(days) {
       focus: minutesIn(d.blocks, 'focus'),
       meeting: minutesIn(d.blocks, 'meeting'),
       comms: minutesIn(d.blocks, 'comms'),
-      'possible-adhoc': minutesIn(d.blocks, 'possible-adhoc'),
+      shallow: minutesIn(d.blocks, 'shallow'),
     },
     total: d.blocks.length * BLOCK_MINUTES,
   }))
@@ -203,7 +203,7 @@ export function computeDayInsight(day, workingStart, workingEnd) {
   const focusMinutes = minutesIn(blocks, 'focus')
   const meetingMinutes = minutesIn(blocks, 'meeting')
   const messagingMinutes = minutesIn(blocks, 'comms')
-  const adhocMinutes = minutesIn(blocks, 'possible-adhoc')
+  const shallowMinutes = minutesIn(blocks, 'shallow')
   const focusRate = workingMinutesPerDay > 0 ? (focusMinutes / workingMinutesPerDay) * 100 : 0
 
   const messages = day?.messages || []
@@ -225,7 +225,7 @@ export function computeDayInsight(day, workingStart, workingEnd) {
     focusMinutes,
     meetingMinutes,
     messagingMinutes,
-    adhocMinutes,
+    shallowMinutes,
     focusRate,
     longestFocusBlock: longestFocusBlock(blocks),
     firstMessage,

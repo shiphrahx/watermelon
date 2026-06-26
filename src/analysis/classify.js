@@ -1,152 +1,195 @@
-// Classification of the working day into 30-minute blocks.
+// Classification of the working day.
 //
-// Categories:
-//   meeting        — block is covered by an accepted calendar event
-//   focus          — no event AND no messages for >= 20 consecutive minutes
-//   comms          — no event but messages are present
-//   possible-adhoc — no event; message activity stops abruptly for 30+ minutes
-//                    then resumes (a likely unscheduled / ad-hoc meeting)
+// Each minute of the working day is classified, then aggregated into 30-minute
+// blocks (the engine's output unit). Categories, in priority order:
 //
-// Inputs are already filtered: events exclude declined + all-day; messages are
-// a flat list of { timestamp } in ms from Teams and Slack combined.
+//   meeting  — an accepted, non-all-day calendar event covers the minute
+//   comms    — "Responding & messaging": active messaging, i.e. no gap longer
+//              than 5 minutes between consecutive sent messages
+//   shallow  — "Shallow work": a gap of 5–20 minutes between sent messages
+//   focus    — "Deep focus": a silent stretch of 20+ minutes with low message
+//              density (< 5 messaging minutes per 30-minute window)
+//   (unclassified) — anything else (e.g. a <20-min gap between meetings); it is
+//              excluded from all totals and is NOT part of CATEGORIES.
+//
+// Inputs are already filtered by normalization: events exclude declined +
+// all-day (tentative kept); messages are { timestamp } in ms.
 
-import { buildDayBlocks, BLOCK_MINUTES, MS_PER_MINUTE } from '../utils/time.js'
+import { buildDayBlocks, BLOCK_MINUTES, fromDateKey, parseTimeToMinutes } from '../utils/time.js'
 
-export const CATEGORIES = ['meeting', 'focus', 'comms', 'possible-adhoc']
+// Active categories shown in totals, legends and charts.
+export const CATEGORIES = ['meeting', 'focus', 'comms', 'shallow']
 
-// Human-readable display names. The raw keys above must NEVER appear in the UI —
-// always render through CATEGORY_LABELS.
+// Minutes that match no rule. Tracked per block but excluded from CATEGORIES.
+export const UNCLASSIFIED = 'unclassified'
+
 export const CATEGORY_LABELS = {
   meeting: 'In meetings',
   focus: 'Deep focus',
   comms: 'Responding & messaging',
-  'possible-adhoc': 'Likely unscheduled calls',
+  shallow: 'Shallow work',
 }
 
-// Singular phrasing used in the day-view timeline ("Likely unscheduled call").
 export const CATEGORY_LABELS_SINGULAR = {
   meeting: 'In meeting',
   focus: 'Deep focus',
   comms: 'Responding & messaging',
-  'possible-adhoc': 'Likely unscheduled call',
+  shallow: 'Shallow work',
 }
 
 export const CATEGORY_DESCRIPTIONS = {
-  meeting: 'Time blocked by calendar events you accepted',
-  focus: 'Uninterrupted blocks of 20+ minutes with no meetings or messages',
-  comms: 'Active time spent on messages, but no formal meeting',
-  'possible-adhoc':
-    'Calendar gaps where your messaging went quiet — you were probably in a call',
+  meeting: 'Time covered by a calendar event you accepted',
+  focus: 'A silent stretch of 20+ minutes with little or no messaging',
+  comms: 'Active messaging — replies with gaps of 5 minutes or less',
+  shallow: 'Between messaging and focus — a 5–20 minute pause (reviewing, reading, small tasks)',
 }
 
-// Calm, consistent palette. Mirrored as CSS variables in index.css.
+// Calm palette. Mirrored as CSS variables in index.css.
 export const CATEGORY_COLORS = {
   meeting: '#5B8DEF', // blue
   focus: '#4CAF82', // green
   comms: '#F5A623', // amber
-  'possible-adhoc': '#9B8EC4', // purple
+  shallow: '#A8C5E8', // muted blue
 }
 
 export const EMPTY_COLOR = '#E0E0E0'
 
-const FOCUS_GAP_MINUTES = 20 // quiet stretch needed to count as focus
-const ADHOC_SILENCE_MINUTES = 30 // abrupt silence that may hide an ad-hoc meeting
+// Thresholds (minutes).
+const MESSAGING_MAX_GAP = 5 // active messaging: consecutive gaps <= this
+const SHALLOW_MAX_GAP = 20 // 5 < gap <= 20 => shallow work
+const FOCUS_MIN_LENGTH = 20 // a focus block must be at least this long
 
-// Returns true if the time window [start, end) overlaps any event.
-function isCoveredByEvent(start, end, events) {
-  return events.some((e) => e.start < end && e.end > start)
+// True if any event covers the minute window [tStart, tEnd).
+function minuteHasMeeting(tStart, tEnd, events) {
+  return events.some((e) => e.start.getTime() < tEnd && e.end.getTime() > tStart)
 }
 
-// Returns message timestamps (ms) that fall within [start, end).
-function messagesInWindow(start, end, messages) {
-  const s = start.getTime()
-  const e = end.getTime()
-  return messages
-    .map((m) => m.timestamp)
-    .filter((ts) => ts >= s && ts < e)
-    .sort((a, b) => a - b)
-}
-
-// Longest gap (minutes) with no messages inside the window, accounting for the
-// window edges as implicit boundaries.
-function longestQuietGap(start, end, msgTimestamps) {
-  const points = [start.getTime(), ...msgTimestamps, end.getTime()]
-  let maxGap = 0
-  for (let i = 1; i < points.length; i++) {
-    const gap = (points[i] - points[i - 1]) / MS_PER_MINUTE
-    if (gap > maxGap) maxGap = gap
-  }
-  return maxGap
-}
-
-// Classify a single 30-minute block.
-//
-// TODO: This is placeholder logic that implements the core rules well enough to
-// drive the UI. Refine it: the "possible-adhoc" detection in particular should
-// consider cross-block context (silence spanning block boundaries, resumption
-// in a later block), per-source weighting (Teams vs Slack), and message volume
-// thresholds rather than mere presence. Consider also a confidence score.
-function classifyBlock(block, events, messages, allDayMessages) {
-  if (isCoveredByEvent(block.start, block.end, events)) {
-    return 'meeting'
-  }
-
-  const blockMsgs = messagesInWindow(block.start, block.end, messages)
-
-  if (blockMsgs.length === 0) {
-    // No messages at all in this block. Check whether this is part of an
-    // abrupt silence between two bursts of activity (=> possible ad-hoc),
-    // otherwise it is focus time.
-    if (isAbruptSilence(block, allDayMessages)) {
-      return 'possible-adhoc'
+// Group sorted messaging-minute offsets into chains where consecutive messages
+// are <= MESSAGING_MAX_GAP apart.
+function buildChains(msgMinutes) {
+  const chains = []
+  for (const m of msgMinutes) {
+    const last = chains[chains.length - 1]
+    if (last && m - last.end <= MESSAGING_MAX_GAP) {
+      last.end = m
+    } else {
+      chains.push({ start: m, end: m })
     }
-    return 'focus'
   }
-
-  // Messages present. If there is still a long quiet stretch within the block,
-  // treat it as focus; otherwise it is comms.
-  const quiet = longestQuietGap(block.start, block.end, blockMsgs)
-  if (quiet >= FOCUS_GAP_MINUTES) {
-    return 'focus'
-  }
-  return 'comms'
+  return chains
 }
 
-// Detect an abrupt silence around a quiet block: activity shortly before the
-// block, then 30+ minutes of silence, then activity resuming afterwards.
-//
-// TODO: tune the look-back / look-forward windows and require a minimum burst
-// size on each side rather than a single message.
-function isAbruptSilence(block, allDayMessages) {
-  const blockStart = block.start.getTime()
-  const blockEnd = block.end.getTime()
-  const lookWindow = ADHOC_SILENCE_MINUTES * MS_PER_MINUTE
+// Classify every minute of the working day into a category (or UNCLASSIFIED).
+function classifyMinutes(dateKey, startMin, endMin, events, messages) {
+  const span = endMin - startMin
+  const minutes = new Array(span).fill(UNCLASSIFIED)
+  const dayStartMs = fromDateKey(dateKey).getTime()
 
-  const before = allDayMessages.some(
-    (m) => m.timestamp < blockStart && m.timestamp >= blockStart - lookWindow,
-  )
-  const after = allDayMessages.some(
-    (m) => m.timestamp >= blockEnd && m.timestamp < blockEnd + lookWindow,
-  )
-  // Silence within the block is implied by the caller (no messages in-block).
-  return before && after
+  // Messaging minutes (a minute holding >= 1 message) within working hours.
+  const msgSet = new Set()
+  for (const msg of messages) {
+    const offset = Math.floor((msg.timestamp - dayStartMs) / 60000)
+    if (offset >= startMin && offset < endMin) msgSet.add(offset)
+  }
+  const msgMinutes = [...msgSet].sort((a, b) => a - b)
+  const chains = buildChains(msgMinutes)
+
+  const idx = (m) => m - startMin
+  const setRange = (from, to, category) => {
+    for (let m = Math.max(from, startMin); m <= Math.min(to, endMin - 1); m++) {
+      minutes[idx(m)] = category
+    }
+  }
+
+  // Silent run [from, to] with no messages -> focus if long enough, else dead.
+  const fillSilence = (from, to) => {
+    if (to < from) return
+    const length = to - from + 1
+    setRange(from, to, length >= FOCUS_MIN_LENGTH ? 'focus' : UNCLASSIFIED)
+  }
+
+  if (chains.length === 0) {
+    fillSilence(startMin, endMin - 1)
+  } else {
+    // Silence before the first chain.
+    fillSilence(startMin, chains[0].start - 1)
+    // Each chain's span is active messaging.
+    for (const c of chains) setRange(c.start, c.end, 'comms')
+    // Gaps between chains.
+    for (let i = 1; i < chains.length; i++) {
+      const gapStart = chains[i - 1].end + 1
+      const gapEnd = chains[i].start - 1
+      const gapLen = chains[i].start - chains[i - 1].end // distance between messages
+      if (gapEnd < gapStart) continue
+      if (gapLen <= SHALLOW_MAX_GAP) {
+        setRange(gapStart, gapEnd, 'shallow') // 5 < gapLen <= 20
+      } else {
+        fillSilence(gapStart, gapEnd) // gapLen > 20
+      }
+    }
+    // Silence after the last chain.
+    fillSilence(chains[chains.length - 1].end + 1, endMin - 1)
+  }
+
+  // Meeting overrides everything (highest priority).
+  for (let m = startMin; m < endMin; m++) {
+    const tStart = dayStartMs + m * 60000
+    if (minuteHasMeeting(tStart, tStart + 60000, events)) minutes[idx(m)] = 'meeting'
+  }
+
+  // Post-pass: a focus run broken below the minimum length — e.g. a short gap
+  // between two meetings — is unclassified dead time, not deep focus.
+  for (let i = 0; i < minutes.length; ) {
+    if (minutes[i] === 'focus') {
+      let j = i
+      while (j < minutes.length && minutes[j] === 'focus') j++
+      if (j - i < FOCUS_MIN_LENGTH) {
+        for (let k = i; k < j; k++) minutes[k] = UNCLASSIFIED
+      }
+      i = j
+    } else {
+      i++
+    }
+  }
+
+  return minutes
 }
 
-// Classify a full day. Returns the blocks with an assigned `category`.
+// Priority used to break ties when a 30-minute block spans multiple categories.
+const PRIORITY = ['meeting', 'comms', 'shallow', 'focus', UNCLASSIFIED]
+
+// Classify a full day into 30-minute blocks with an assigned `category`.
 export function classifyDay({ dateKey, workingStart, workingEnd, events, messages }) {
+  const startMin = parseTimeToMinutes(workingStart)
+  const endMin = parseTimeToMinutes(workingEnd)
+  const minutes = classifyMinutes(dateKey, startMin, endMin, events, messages)
   const blocks = buildDayBlocks(dateKey, workingStart, workingEnd)
-  return blocks.map((block) => ({
-    ...block,
-    category: classifyBlock(block, events, messages, messages),
-  }))
+
+  return blocks.map((block) => {
+    const counts = {}
+    for (let m = block.startMinute; m < block.endMinute; m++) {
+      const cat = minutes[m - startMin]
+      counts[cat] = (counts[cat] || 0) + 1
+    }
+    let best = UNCLASSIFIED
+    let bestCount = -1
+    for (const cat of PRIORITY) {
+      const c = counts[cat] || 0
+      if (c > bestCount) {
+        best = cat
+        bestCount = c
+      }
+    }
+    return { ...block, category: best }
+  })
 }
 
-// Aggregate classified blocks (across one or many days) into total minutes per
-// category, for the dashboard summary cards.
+// Aggregate classified blocks into total minutes per active category. Blocks
+// that are UNCLASSIFIED are excluded from all totals.
 export function summarise(classifiedBlocks) {
   const totals = Object.fromEntries(CATEGORIES.map((c) => [c, 0]))
   for (const block of classifiedBlocks) {
-    totals[block.category] += BLOCK_MINUTES
+    if (block.category in totals) totals[block.category] += BLOCK_MINUTES
   }
   return totals
 }

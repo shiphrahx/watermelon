@@ -30,12 +30,12 @@ function ev(subject, dateKey, startHHMM, endHHMM) {
 
 // A representative Monday:
 //  09:00-10:00 meeting | 10:00-12:00 focus | 12:00-12:30 comms |
-//  12:30-13:00 adhoc   | 13:00-18:00 focus
+//  12:30-13:00 shallow | 13:00-18:00 focus
 const MON = '2025-06-23'
 const cats = [
   'meeting', 'meeting',
   'focus', 'focus', 'focus', 'focus',
-  'comms', 'possible-adhoc',
+  'comms', 'shallow',
   'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus',
 ]
 const events = [
@@ -67,7 +67,7 @@ describe('computeInsights', () => {
     expect(insights.meetingMinutes).toBe(60)
     expect(insights.focusMinutes).toBe(420)
     expect(insights.messagingMinutes).toBe(30)
-    expect(insights.adhocMinutes).toBe(30)
+    expect(insights.shallowMinutes).toBe(30)
   })
 
   it('computes focus rate against total working minutes', () => {

@@ -52,9 +52,12 @@ cd cloudflare && npx wrangler deploy
 - `src/utils/normalize.js` — converts raw Graph/Slack shapes into the internal
   `{ start, end, isOnlineMeeting }` / `{ timestamp, source }` shapes. The one
   place that understands raw API shapes, keeping mock and real interchangeable.
-- `src/analysis/classify.js` — classifies each 30-minute block of the working
-  day into `meeting` / `focus` / `comms` / `possible-adhoc`. Core rules are in
-  place; refinement points are marked with `TODO`.
+- `src/analysis/classify.js` — classifies each minute of the working day, then
+  aggregates into 30-minute blocks. Active categories (priority order):
+  `meeting` (accepted event covers it) > `comms` (Responding & messaging — gaps
+  ≤5 min between sent messages) > `shallow` (Shallow work — 5–20 min message
+  gap) > `focus` (Deep focus — 20+ min low-density silence). Minutes matching
+  none are `unclassified` and excluded from all totals (not in `CATEGORIES`).
 - `src/analysis/report.js` — pure pipeline: raw data + range + working hours →
   per-day classified blocks (+ events/messages) + summary. React/network-free.
 - `src/analysis/insights.js` — turns a report into dashboard metrics: focus
@@ -79,7 +82,7 @@ cd cloudflare && npx wrangler deploy
   previous week, insights, trends) and `useDayReport(dateKey)`. Mock mode
   bypasses connection gating.
 - Categories are renamed for display in `classify.js` (`CATEGORY_LABELS`); the
-  raw keys (`meeting`/`focus`/`comms`/`possible-adhoc`) must NEVER reach the UI.
+  raw keys (`meeting`/`focus`/`comms`/`shallow`) must NEVER reach the UI.
   Palette is `--color-*` CSS vars mirroring `CATEGORY_COLORS`.
 - Routes: `/` Dashboard (default), `/day/:dateKey` Day view, `/settings`.
   Default range is **this week** (Mon→today, or Mon→Fri on weekends).

@@ -1,15 +1,23 @@
 // Vertical day-view timeline. Working hours top→bottom, one colour-coded band
 // per merged activity segment, with hourly axis labels on the left.
 
-import { CATEGORY_COLORS, CATEGORY_LABELS_SINGULAR } from '../analysis/classify.js'
+import { CATEGORY_COLORS, CATEGORY_LABELS_SINGULAR, EMPTY_COLOR } from '../analysis/classify.js'
 import { mergeBlocksIntoSegments } from '../utils/segments.js'
 import { minutesToTimeLabel, formatDuration, parseTimeToMinutes } from '../utils/time.js'
 
 const PX_PER_MIN = 1.1 // vertical scale
 
+function colorFor(seg) {
+  return CATEGORY_COLORS[seg.category] || EMPTY_COLOR
+}
+
 function labelFor(seg) {
   if (seg.category === 'meeting') {
     return seg.title || CATEGORY_LABELS_SINGULAR.meeting
+  }
+  // Unclassified dead time has no active-category label.
+  if (!CATEGORY_LABELS_SINGULAR[seg.category]) {
+    return `Unscheduled — ${formatDuration(seg.minutes)}`
   }
   return `${CATEGORY_LABELS_SINGULAR[seg.category]} — ${formatDuration(seg.minutes)}`
 }
@@ -36,7 +44,7 @@ export default function DayTimeline({ day, workingStart, workingEnd }) {
             <div
               key={i}
               className="vtimeline__block"
-              style={{ height, backgroundColor: CATEGORY_COLORS[seg.category] }}
+              style={{ height, backgroundColor: colorFor(seg) }}
               title={`${minutesToTimeLabel(seg.startMinute)}–${minutesToTimeLabel(
                 seg.endMinute,
               )} · ${labelFor(seg)}`}
