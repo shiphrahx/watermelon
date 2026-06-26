@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildReport } from './report.js'
-import { CATEGORIES } from './classify.js'
+import { CATEGORIES, UNCLASSIFIED } from './classify.js'
 import { buildRecentDataset, datasetDays, dateKeyOf } from '../mock/generator.js'
 import { dateKeysInRange } from '../utils/time.js'
 
@@ -28,7 +28,7 @@ describe('buildReport — single mock day', () => {
     // 09:00-18:00 = 9h = 18 half-hour blocks
     expect(out[0].blocks).toHaveLength(18)
     for (const b of out[0].blocks) {
-      expect(CATEGORIES).toContain(b.category)
+      expect([...CATEGORIES, UNCLASSIFIED]).toContain(b.category)
     }
   })
 })
@@ -57,9 +57,12 @@ describe('buildReport — full 10-day dataset exercises every category', () => {
     for (const c of CATEGORIES) {
       expect(summary).toHaveProperty(c)
     }
-    const total = CATEGORIES.reduce((acc, c) => acc + summary[c], 0)
-    // every calendar day in range * 18 half-hour blocks * 30 min
-    expect(total).toBe(out.length * 18 * 30)
+    // active-category minutes + unclassified minutes == all block time
+    const active = CATEGORIES.reduce((acc, c) => acc + summary[c], 0)
+    const unclassified = out
+      .flatMap((d) => d.blocks)
+      .filter((b) => b.category === UNCLASSIFIED).length * 30
+    expect(active + unclassified).toBe(out.length * 18 * 30)
   })
 
   it('produces every classification category at least once across the dataset', () => {

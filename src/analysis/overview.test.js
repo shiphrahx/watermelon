@@ -32,30 +32,30 @@ describe('dayQualityLabel', () => {
 
   it('labels a reactive day (lots of messaging, no real focus blocks)', () => {
     // 8 comms (4h) > 3h, meetings 210m (< 50%), no focus run => reactive
-    const cats = [...Array(8).fill('comms'), ...Array(7).fill('meeting'), ...Array(3).fill('possible-adhoc')]
+    const cats = [...Array(8).fill('comms'), ...Array(7).fill('meeting'), ...Array(3).fill('shallow')]
     const day = makeDay('2025-06-23', cats, withData)
     expect(dayQualityLabel(day, WS, WE)).toBe('Reactive day')
   })
 
   it('labels a scattered day (no category over 40%)', () => {
-    // even-ish spread: 5 focus, 5 meeting, 4 comms, 4 adhoc (max share 5/18=28%)
+    // even-ish spread: 5 focus, 5 meeting, 4 comms, 4 shallow (max share 5/18=28%)
     const cats = [
       ...Array(5).fill('focus'),
       ...Array(5).fill('meeting'),
       ...Array(4).fill('comms'),
-      ...Array(4).fill('possible-adhoc'),
+      ...Array(4).fill('shallow'),
     ]
     const day = makeDay('2025-06-23', cats, withData)
     expect(dayQualityLabel(day, WS, WE)).toBe('Scattered day')
   })
 
   it('defaults to "Mixed day" when a day with data matches no pattern', () => {
-    // focus 8 (44% share, not >4h), meeting 4, comms 3, adhoc 3 -> no rule fits
+    // focus 8 (44% share, not >4h), meeting 4, comms 3, shallow 3 -> no rule fits
     const cats = [
       ...Array(8).fill('focus'),
       ...Array(4).fill('meeting'),
       ...Array(3).fill('comms'),
-      ...Array(3).fill('possible-adhoc'),
+      ...Array(3).fill('shallow'),
     ]
     expect(dayQualityLabel(makeDay('2025-06-23', cats, withData), WS, WE)).toBe('Mixed day')
   })

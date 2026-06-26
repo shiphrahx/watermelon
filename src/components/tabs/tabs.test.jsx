@@ -30,7 +30,7 @@ function makeDay(dateKey, cats, events, messages) {
 const MON = '2025-06-23'
 const TUE = '2025-06-24'
 const cats = [
-  'meeting', 'meeting', 'focus', 'focus', 'comms', 'possible-adhoc',
+  'meeting', 'meeting', 'focus', 'focus', 'comms', 'shallow',
   'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus', 'focus',
 ]
 const days = [

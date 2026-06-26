@@ -12,7 +12,7 @@ describe('TimeBreakdown', () => {
       weekday: 'Monday',
       isWeekday: true,
       hasData: true,
-      categories: { focus: 300, meeting: 120, comms: 60, 'possible-adhoc': 60 },
+      categories: { focus: 300, meeting: 120, comms: 60, shallow: 60 },
       total: 540,
     },
     {
@@ -20,7 +20,7 @@ describe('TimeBreakdown', () => {
       weekday: 'Saturday',
       isWeekday: false,
       hasData: false,
-      categories: { focus: 0, meeting: 0, comms: 0, 'possible-adhoc': 0 },
+      categories: { focus: 0, meeting: 0, comms: 0, shallow: 0 },
       total: 540,
     },
   ]

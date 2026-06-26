@@ -137,6 +137,21 @@ function classifyMinutes(dateKey, startMin, endMin, events, messages) {
     if (minuteHasMeeting(tStart, tStart + 60000, events)) minutes[idx(m)] = 'meeting'
   }
 
+  // Post-pass: a focus run broken below the minimum length — e.g. a short gap
+  // between two meetings — is unclassified dead time, not deep focus.
+  for (let i = 0; i < minutes.length; ) {
+    if (minutes[i] === 'focus') {
+      let j = i
+      while (j < minutes.length && minutes[j] === 'focus') j++
+      if (j - i < FOCUS_MIN_LENGTH) {
+        for (let k = i; k < j; k++) minutes[k] = UNCLASSIFIED
+      }
+      i = j
+    } else {
+      i++
+    }
+  }
+
   return minutes
 }
 
