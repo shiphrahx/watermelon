@@ -10,6 +10,7 @@ import EndOfDayOverrun from '../panels/EndOfDayOverrun.jsx'
 import { dayQualityLabel, endOfDayOverrun } from '../../analysis/overview.js'
 import { computeGoalProgress } from '../../analysis/goal.js'
 import { benchmarkWeek } from '../../analysis/benchmark.js'
+import { computeFocusDebt } from '../../analysis/focusDebt.js'
 import { getSettings } from '../../utils/settings.js'
 import { getAllWeeks } from '../../storage/history.js'
 import { isoWeekKey } from '../../utils/ranges.js'
@@ -37,10 +38,21 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
     return benchmarkWeek(getAllWeeks(), isoWeekKey(days[0].dateKey))
   }, [days])
 
+  const focusDebt = useMemo(
+    () => computeFocusDebt(insights.perDay, Number(settings.lowFocusThresholdHours) || 1),
+    [insights.perDay, settings.lowFocusThresholdHours],
+  )
+
   return (
     <>
       <InsightCards insights={insights} trends={trends} />
       {benchmark && <p className="benchmark">{benchmark}</p>}
+      {focusDebt.streak >= 3 && (
+        <p className="focus-debt">
+          You've had {focusDebt.streak} days in a row with little deep focus — you may be due for a
+          protected block.
+        </p>
+      )}
       <GoalProgress progress={goalProgress} />
       <div className="panels">
         <TimeBreakdown perDay={insights.perDay} onSelectDay={onSelectDay} qualityLabels={qualityLabels} />
