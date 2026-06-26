@@ -43,8 +43,22 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
     [insights.perDay, settings.lowFocusThresholdHours],
   )
 
+  async function handleExport() {
+    try {
+      // Lazy-load jsPDF so it stays out of the main bundle.
+      const { exportWeeklyPdf } = await import('../../export/weeklyPdf.js')
+      exportWeeklyPdf(insights)
+    } catch (err) {
+      console.error(err)
+      alert('Could not generate the PDF. Please try again.')
+    }
+  }
+
   return (
     <>
+      <div className="overview__actions">
+        <button onClick={handleExport}>Export PDF</button>
+      </div>
       <InsightCards insights={insights} trends={trends} />
       {benchmark && <p className="benchmark">{benchmark}</p>}
       {focusDebt.streak >= 3 && (

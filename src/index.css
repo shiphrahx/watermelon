@@ -1204,3 +1204,9 @@ button.danger:hover {
 .vtimeline2__menu button:hover {
   background: #f1f1ee;
 }
+
+.overview__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
