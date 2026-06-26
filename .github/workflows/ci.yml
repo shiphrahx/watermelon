@@ -1,0 +1,32 @@
+name: CI
+
+# Build and test on every push and pull request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Resolve dependencies fresh for the Linux runner. Some tooling (vitest's
+      # rolldown, esbuild) ships platform-specific native bindings as optional
+      # deps; a lockfile generated on another OS pins them away and breaks both
+      # `npm ci` and a lockfile-constrained install. Removing the lockfile lets
+      # npm pick the correct Linux binaries.
+      - name: Install dependencies
+        run: rm -f package-lock.json && npm install --no-audit --no-fund
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
