@@ -1117,3 +1117,90 @@ button.danger:hover {
   padding: 0.7rem 1rem;
   margin: 0 0 1rem;
 }
+
+/* Annotated, correctable day timeline (Issue #36) */
+.day-view__legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.vtimeline2 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0.5rem 0 1rem;
+}
+
+.vtimeline2__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.vtimeline2__axis {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: right;
+  padding-top: 6px;
+}
+
+.vtimeline2__block {
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  min-height: 26px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vtimeline2__block.is-corrected {
+  outline: 2px dashed rgba(0, 0, 0, 0.45);
+  outline-offset: -3px;
+}
+
+.vtimeline2__mark {
+  font-size: 0.8rem;
+}
+
+.vtimeline2__menu {
+  position: absolute;
+  z-index: 5;
+  left: 56px;
+  top: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.vtimeline2__menu button {
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.vtimeline2__menu button:hover {
+  background: #f1f1ee;
+}

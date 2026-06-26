@@ -10,9 +10,9 @@ import { SkeletonPanel } from '../components/Skeleton.jsx'
 import ErrorState from '../components/ErrorState.jsx'
 import { useDayReport } from '../hooks/useProductivityData.js'
 import { dailySummarySentence } from '../analysis/insights.js'
-import { getSettings } from '../utils/settings.js'
 import { navigateDay } from '../utils/ranges.js'
 import { fromDateKey } from '../utils/time.js'
+import { saveCorrection, clearDayCorrections, getDayCorrections } from '../storage/corrections.js'
 
 export default function DayView() {
   const { dateKey } = useParams()
@@ -20,7 +20,6 @@ export default function DayView() {
   const [searchParams] = useSearchParams()
   const tab = searchParams.get('tab')
   const backTo = tab ? `/?tab=${tab}` : '/'
-  const { workingHoursStart, workingHoursEnd } = getSettings()
 
   const { loading, error, day, dayInsight, reload } = useDayReport(dateKey)
 
@@ -36,6 +35,16 @@ export default function DayView() {
 
   const dayHref = (key) => `/day/${key}${tab ? `?tab=${tab}` : ''}`
   const goToDay = (direction) => navigate(dayHref(navigateDay(dateKey, direction)))
+
+  function handleCorrect(startMinute, category) {
+    saveCorrection(dateKey, startMinute, category)
+    reload()
+  }
+  function handleResetCorrections() {
+    clearDayCorrections(dateKey)
+    reload()
+  }
+  const hasCorrections = Object.keys(getDayCorrections(dateKey)).length > 0
 
   return (
     <section>
@@ -61,8 +70,18 @@ export default function DayView() {
       {!loading && !error && dayInsight && (
         <>
           <p className="summary-sentence">{dailySummarySentence(dayInsight)}</p>
-          <CategoryLegend />
-          <DayTimeline day={day} workingStart={workingHoursStart} workingEnd={workingHoursEnd} />
+          <div className="day-view__legend-row">
+            <CategoryLegend />
+            {hasCorrections && (
+              <button className="back-link" onClick={handleResetCorrections}>
+                Reset corrections for this day
+              </button>
+            )}
+          </div>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Click any block to reclassify it.
+          </p>
+          <DayTimeline day={day} onCorrect={handleCorrect} />
           <DayStats dayInsight={dayInsight} />
         </>
       )}
