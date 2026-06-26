@@ -963,3 +963,13 @@ button:disabled {
   flex-direction: column;
   gap: 0.4rem;
 }
+
+button.danger {
+  background: #fff;
+  color: var(--melon-red);
+  border-color: var(--melon-red);
+}
+
+button.danger:hover {
+  background: #fdecec;
+}

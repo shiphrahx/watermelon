@@ -6,12 +6,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { loadReport, NoConnectionError } from '../data/loadReport.js'
 import { getSettings } from '../utils/settings.js'
-import { previousWeekRange } from '../utils/ranges.js'
+import { previousWeekRange, isoWeekKey } from '../utils/ranges.js'
 import {
   computeInsights,
   computeTrends,
   computeDayInsight,
 } from '../analysis/insights.js'
+import { buildWeekSummary } from '../analysis/weekSummary.js'
+import { saveWeek } from '../storage/history.js'
 
 const GENERIC_ERROR = "Couldn't load this data. Check your connection and try again."
 
@@ -48,6 +50,13 @@ export function useDashboardData(range) {
         workingEnd: workingHoursEnd,
       })
       const trends = computeTrends(insights, prevInsights)
+
+      // Persist this week's aggregated summary for trends/comparisons (#29).
+      try {
+        saveWeek(isoWeekKey(range.startKey), buildWeekSummary({ insights, days: report.days }))
+      } catch {
+        // Persistence is best-effort; never block the dashboard on it.
+      }
 
       setData({
         report,

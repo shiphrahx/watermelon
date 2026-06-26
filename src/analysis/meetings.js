@@ -18,6 +18,41 @@ function weekdays(days) {
   return days.filter((d) => isWeekday(d.dateKey))
 }
 
+// Normalise a meeting title so recurring instances group together: trim,
+// lower-case, and strip trailing instance markers like "#14", "- 2025-06-24",
+// "(3)" or a bare trailing number.
+export function normalizeMeetingTitle(title) {
+  return (title || '')
+    .trim()
+    .replace(/[#(]?\s*\d{4}-\d{2}-\d{2}\)?\s*$/i, '') // trailing date
+    .replace(/[-–—:]?\s*#?\(?\s*\d+\s*\)?\s*$/, '') // trailing number / #n / (n)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+// Group accepted meetings by normalised title across the given days. Returns
+// [{ title, totalMinutes, occurrences, averageMinutes }] sorted by total desc.
+export function recurringMeetings(days, { minOccurrences = 1 } = {}) {
+  const groups = new Map()
+  for (const d of weekdays(days)) {
+    for (const e of d.events || []) {
+      const mins = durationMin(e)
+      if (mins <= 0) continue
+      const key = normalizeMeetingTitle(e.subject)
+      if (!key) continue
+      const g = groups.get(key) || { title: (e.subject || '').trim(), totalMinutes: 0, occurrences: 0 }
+      g.totalMinutes += mins
+      g.occurrences += 1
+      groups.set(key, g)
+    }
+  }
+  return [...groups.values()]
+    .filter((g) => g.occurrences >= minOccurrences)
+    .map((g) => ({ ...g, averageMinutes: Math.round(g.totalMinutes / g.occurrences) }))
+    .sort((a, b) => b.totalMinutes - a.totalMinutes)
+}
+
 // Top 5 event titles by cumulative duration; repeated titles merged.
 export function topConsumers(days, limit = 5) {
   const byTitle = new Map()

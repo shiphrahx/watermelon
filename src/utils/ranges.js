@@ -94,6 +94,20 @@ export function navigateDay(dateKey, direction) {
   return toDateKey(addDays(fromDateKey(dateKey), direction))
 }
 
+// ISO 8601 year-week key for a date or date-key, e.g. "2026-W26".
+export function isoWeekKey(dateOrKey) {
+  const src = typeof dateOrKey === 'string' ? fromDateKey(dateOrKey) : dateOrKey
+  const d = new Date(Date.UTC(src.getFullYear(), src.getMonth(), src.getDate()))
+  // Shift to the Thursday of the current ISO week.
+  const dayNum = (d.getUTCDay() + 6) % 7 // Mon=0 .. Sun=6
+  d.setUTCDate(d.getUTCDate() - dayNum + 3)
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4))
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3)
+  const week = 1 + Math.round((d - firstThursday) / (7 * 24 * 3600 * 1000))
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
+}
+
 // Named presets the dashboard exposes.
 export const RANGE_PRESETS = [
   { id: 'this-week', label: 'This week', range: (t) => thisWeekRange(t) },

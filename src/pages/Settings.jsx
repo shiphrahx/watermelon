@@ -10,6 +10,7 @@ import {
 } from '../auth/microsoft.js'
 import { isSlackConnected, loginSlack, logoutSlack } from '../auth/slack.js'
 import { getSettings, saveSettings } from '../utils/settings.js'
+import { clearHistory } from '../storage/history.js'
 
 export default function Settings() {
   const [msConnected, setMsConnected] = useState(false)
@@ -64,6 +65,13 @@ export default function Settings() {
     e.preventDefault()
     saveSettings(settings)
     setSaved(true)
+  }
+
+  const [historyCleared, setHistoryCleared] = useState(false)
+  function handleClearHistory() {
+    if (!window.confirm('Clear all stored weekly summaries? This cannot be undone.')) return
+    clearHistory()
+    setHistoryCleared(true)
   }
 
   return (
@@ -147,6 +155,20 @@ export default function Settings() {
           {saved && <span className="muted">Saved ✓</span>}
         </div>
       </form>
+
+      <div className="card">
+        <h2>History</h2>
+        <p className="muted">
+          Watermelon stores a small aggregated summary of each analysed week on this device to
+          power trends and comparisons. No message or event content is ever stored.
+        </p>
+        <div className="actions">
+          <button className="danger" onClick={handleClearHistory}>
+            Clear history
+          </button>
+          {historyCleared && <span className="muted">History cleared ✓</span>}
+        </div>
+      </div>
     </section>
   )
 }
