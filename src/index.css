@@ -973,3 +973,49 @@ button.danger {
 button.danger:hover {
   background: #fdecec;
 }
+
+/* Charts (Trends) */
+.chart__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart__grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.chart__axis {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.chart__tick {
+  fill: var(--muted);
+  font-size: 9px;
+}
+
+.chart__axis-label {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+.chart__ref {
+  stroke: var(--melon-red);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.chart__ref-swatch {
+  background: var(--melon-red);
+}
+
+.chart__legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
