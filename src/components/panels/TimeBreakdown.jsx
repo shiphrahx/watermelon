@@ -37,7 +37,6 @@ export default function TimeBreakdown({ perDay = [], onSelectDay, qualityLabels 
     <Panel
       title="Time breakdown"
       hint="How each working day was spent"
-      wide
       isEmpty={!anyData}
       emptyMessage="No activity found for this period."
     >
