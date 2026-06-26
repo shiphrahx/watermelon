@@ -1,21 +1,59 @@
 :root {
-  /* Category palette (single source of truth — mirrors classify.js) */
+  /* ── Category palette (mirrors classify.js) ── */
   --color-focus: #4caf82;
   --color-meetings: #5b8def;
   --color-messaging: #f5a623;
   --color-shallow: #a8c5e8;
   --color-empty: #e0e0e0;
 
+  /* ── Accent + semantic ── */
+  --accent: #4caf82; /* dominant accent = focus green */
+  --accent-soft: #e6f4ea;
+  --delta-up: #1d9e75;
+  --delta-down: #d85a30;
   --melon-red: #e4572e;
-  --ink: #1f2933;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --bg: #fafaf7;
+
+  /* ── Surfaces + text ── */
+  --ink: #1f2933; /* near-black hero numbers */
+  --muted: #6b7280; /* labels */
+  --caption: #9aa3ad; /* captions, axis ticks */
+  --line: #eceef0;
+  --bg: #fafaf7; /* soft off-white page */
   --card-bg: #ffffff;
-  --radius: 10px;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+
+  /* ── Card tokens ── */
+  --radius: 16px;
+  --radius-sm: 10px;
+  --card-pad: 20px 24px;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --gap: 16px;
+
+  /* ── Type scale (use ONLY these) ── */
+  --font-hero: 40px;
+  --font-value: 22px;
+  --font-title: 15px;
+  --font-label: 13px;
+  --font-caption: 11px;
+
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--font-label);
+  line-height: 1.5;
   color: var(--ink);
+}
+
+/* Dark mode: every token has a dark value. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent-soft: #14352a;
+    --ink: #e8edf2;
+    --muted: #9aa3ad;
+    --caption: #6b7280;
+    --line: #2a2f37;
+    --bg: #14171c;
+    --card-bg: #1c2026;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
+    --color-empty: #353b44;
+  }
 }
 
 * {
@@ -25,7 +63,15 @@
 body {
   margin: 0;
   background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  line-height: 1.2;
+  font-weight: 600;
 }
 
 .app {
@@ -272,8 +318,8 @@ input[type='url'] {
 }
 
 .badge--on {
-  background: #e6f4ea;
-  color: var(--rind-green);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .badge--off {
@@ -1355,3 +1401,215 @@ button.danger:hover {
 .goal2__head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem; }
 .goal2__label { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .goal2__caption { font-size: 1.05rem; font-weight: 600; }
+
+/* =========================================================================
+   Design system v2 — unified card surfaces & rhythm (Issue #42)
+   ========================================================================= */
+.card,
+.panel,
+.insight-card,
+.hero,
+.goal2,
+.goal,
+.summary-sentence {
+  border: none !important;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  background: var(--card-bg);
+}
+
+.card,
+.panel {
+  padding: var(--card-pad);
+}
+
+.insight-card {
+  padding: 18px 20px;
+}
+
+/* keep a soft accent edge on the weekly summary */
+.summary-sentence {
+  border-left: 4px solid var(--accent) !important;
+}
+
+.panels,
+.insight-cards {
+  gap: var(--gap);
+}
+
+/* type scale + weight discipline */
+.panel h2 {
+  font-size: var(--font-title);
+  font-weight: 600;
+}
+.panel__hint {
+  font-size: var(--font-label);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.insight-card__label {
+  font-size: var(--font-label);
+  color: var(--muted);
+  text-transform: none; /* sentence case, no caps */
+  letter-spacing: 0;
+}
+.insight-card__value {
+  font-size: var(--font-hero);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.insight-card__value--small {
+  font-size: var(--font-value);
+}
+
+/* =========================================================================
+   UI primitives (Card, Tooltip/HoverInfo, KPI, pills, segmented) — #42/#43/#45
+   ========================================================================= */
+.uicard {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--card-pad);
+}
+.uicard--flush { padding: 0; overflow: hidden; }
+.uicard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.uicard__title {
+  font-size: var(--font-title);
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
+}
+.uicard__actions { display: flex; gap: 8px; align-items: center; }
+
+/* HoverInfo + Tooltip */
+.hoverinfo { position: relative; cursor: pointer; outline: none; }
+.hoverinfo:focus-visible { box-shadow: 0 0 0 2px var(--accent-soft); border-radius: 4px; }
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2933;
+  color: #fff;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: var(--font-caption);
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: normal;
+  width: max-content;
+  max-width: 240px;
+  text-align: left;
+  z-index: 30;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+.tooltip__arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1f2933;
+}
+
+/* KPI card (#43) */
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.kpi__badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: var(--accent-soft);
+}
+.kpi__label {
+  font-size: var(--font-label);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.kpi__value {
+  font-size: var(--font-hero);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.kpi__value--sm { font-size: var(--font-value); }
+.kpi__delta {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.kpi__delta--up { color: var(--delta-up); }
+.kpi__delta--down { color: var(--delta-down); }
+.kpi__delta--flat { color: var(--muted); }
+.kpi__spark {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 64px;
+  height: 24px;
+}
+
+/* Status pills (#45) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Segmented control (#45) */
+.segmented {
+  display: inline-flex;
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+.segmented__btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--font-label);
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.segmented__btn:hover { filter: none; color: var(--ink); }
+.segmented__btn--active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Primary + secondary split + detail grid (#46) */
+.split {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+@media (max-width: 680px) {
+  .split { grid-template-columns: 1fr; }
+}
