@@ -1,6 +1,7 @@
 // Meetings panel — cumulative cost of recurring meetings across history.
 
 import Panel from '../Panel.jsx'
+import HoverInfo from '../ui/HoverInfo.jsx'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
 import { formatDuration } from '../../utils/time.js'
 
@@ -15,16 +16,17 @@ export default function RecurringMeetingCost({ audit }) {
       isEmpty={items.length === 0}
       emptyMessage="No recurring meetings found yet."
     >
+      {/* Visual-first: title + bar at rest; totals/occurrences/avg on hover. */}
       <div className="recurring-list">
         {items.map((m) => (
-          <div className="recurring-row" key={m.title}>
+          <HoverInfo
+            as="div"
+            className="recurring-row"
+            key={m.title}
+            content={`${formatDuration(m.totalMinutes)} total · ${m.occurrences} occurrences · ${formatDuration(m.averageMinutes)} avg`}
+          >
             <div className="recurring-row__top">
-              <span className="recurring-row__title" title={m.title}>
-                {m.title}
-              </span>
-              <span className="recurring-row__meta">
-                {formatDuration(m.totalMinutes)} · {m.occurrences}× · {formatDuration(m.averageMinutes)} avg
-              </span>
+              <span className="recurring-row__title">{m.title}</span>
             </div>
             <div className="ranked-bar">
               <div
@@ -32,13 +34,12 @@ export default function RecurringMeetingCost({ audit }) {
                 style={{ width: `${(m.totalMinutes / max) * 100}%`, backgroundColor: CATEGORY_COLORS.meeting }}
               />
             </div>
-          </div>
+          </HoverInfo>
         ))}
       </div>
       {mostExpensive && (
         <p className="highlight-note">
-          You've spent {formatDuration(mostExpensive.totalMinutes)} in “{mostExpensive.title}”. Worth a
-          look?
+          Most: “{mostExpensive.title}” — {formatDuration(mostExpensive.totalMinutes)}
         </p>
       )}
     </Panel>

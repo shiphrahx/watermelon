@@ -1619,3 +1619,28 @@ button.danger:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
+
+/* Back-to-back mini segmented bar (#45) */
+.b2b { cursor: pointer; }
+.miniseg {
+  display: flex;
+  gap: 3px;
+  margin: 8px 0 6px;
+  flex-wrap: wrap;
+}
+.miniseg__cell {
+  width: 14px;
+  height: 8px;
+  border-radius: 3px;
+  background: var(--color-empty);
+}
+.miniseg__cell.is-on { background: var(--accent); }
+.b2b__hint { font-size: var(--font-caption); color: var(--muted); }
+
+/* Pills row + warn pill (#45) */
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill--warn { background: #fdeee0; color: #b4632a; }
+@media (prefers-color-scheme: dark) {
+  .pill--warn { background: #3a2a1a; color: #f3b27a; }
+}
+.recurring-row { cursor: pointer; }

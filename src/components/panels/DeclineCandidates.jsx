@@ -1,7 +1,8 @@
 // Meetings panel — recurring meetings the user consistently multitasks through.
-// Neutral observation, not advice.
+// At rest: just the titles as pills; per-meeting detail on hover. Neutral tone.
 
 import Panel from '../Panel.jsx'
+import HoverInfo from '../ui/HoverInfo.jsx'
 
 export default function DeclineCandidates({ candidates = [] }) {
   if (candidates.length === 0) {
@@ -15,18 +16,15 @@ export default function DeclineCandidates({ candidates = [] }) {
   }
 
   return (
-    <Panel title="Possible decline candidates">
-      <p className="panel__hint" style={{ marginTop: 0 }}>
-        You're frequently messaging during these meetings — they may not need your full attention.
-      </p>
-      <div className="simple-list">
+    <Panel title="Possible decline candidates" hint="Meetings you frequently message through">
+      <div className="pill-row">
         {candidates.map((c) => (
-          <div className="pair-list__row" key={c.title}>
-            <span style={{ gridColumn: '1 / 2' }}>{c.title}</span>
-            <span className="muted" style={{ gridColumn: '2 / 4', textAlign: 'right' }}>
-              {Math.round(c.avgMessages)} msgs/occurrence · {c.occurrences}×
-            </span>
-          </div>
+          <HoverInfo
+            key={c.title}
+            content={`${Math.round(c.avgMessages)} msgs/occurrence over ${c.occurrences} occurrences`}
+          >
+            <span className="pill pill--warn">{c.title}</span>
+          </HoverInfo>
         ))}
       </div>
     </Panel>
