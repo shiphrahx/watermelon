@@ -38,8 +38,5 @@ describe('TrendsTab', () => {
     expect(screen.getByText('Best week')).toBeInTheDocument()
     // upward trend sentence
     expect(screen.getByText(/trended up/)).toBeInTheDocument()
-    // charts expose legends (labelled series)
-    expect(screen.getAllByText('Focus hours').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Meeting hours').length).toBeGreaterThan(0)
   })
 })

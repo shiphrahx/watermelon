@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react'
 import Panel from '../Panel.jsx'
-import MultiLineChart from '../charts/MultiLineChart.jsx'
+import TrendChart from '../charts/TrendChart.jsx'
 import { getRecentWeeks } from '../../storage/history.js'
 import { computeTrendStats } from '../../analysis/trends.js'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
@@ -26,7 +26,14 @@ export default function TrendsTab({ goalHours }) {
     )
   }
 
-  const weekKeys = weeks.map((w) => w.weekKey)
+  const shortWeek = (wk) => `W${String(wk).split('-W')[1] || ''}`
+  const chartData = weeks.map((w) => ({
+    label: shortWeek(w.weekKey),
+    focusRate: w.focusRate,
+    focusHours: hours(w.focusMinutes),
+    meetingHours: hours(w.meetingMinutes),
+    fragmentation: w.fragmentationCount,
+  }))
   const deltaDir = stats.focusDelta > 0 ? 'up' : stats.focusDelta < 0 ? 'down' : 'flat'
 
   return (
@@ -55,37 +62,30 @@ export default function TrendsTab({ goalHours }) {
 
       <div className="panels">
         <Panel title="Focus rate over time" hint="Percentage of working hours spent in deep focus">
-          <MultiLineChart
-            weekKeys={weekKeys}
-            yLabel="Focus rate"
-            yMax={100}
+          <TrendChart
+            data={chartData}
             yUnit="%"
-            lines={[
-              { key: 'focusRate', label: 'Focus rate %', color: CATEGORY_COLORS.focus, values: weeks.map((w) => w.focusRate) },
-            ]}
+            yDomain={[0, 100]}
+            series={[{ key: 'focusRate', label: 'Focus rate', color: CATEGORY_COLORS.focus }]}
           />
         </Panel>
 
         <Panel title="Meeting vs focus hours" hint="Hours per week in each">
-          <MultiLineChart
-            weekKeys={weekKeys}
-            yLabel="Hours"
+          <TrendChart
+            data={chartData}
             yUnit="h"
             referenceLine={goalHours ? { value: goalHours, label: `Goal ${formatDuration(goalHours * 60)}` } : null}
-            lines={[
-              { key: 'focus', label: 'Focus hours', color: CATEGORY_COLORS.focus, values: weeks.map((w) => hours(w.focusMinutes)) },
-              { key: 'meeting', label: 'Meeting hours', color: CATEGORY_COLORS.meeting, values: weeks.map((w) => hours(w.meetingMinutes)) },
+            series={[
+              { key: 'focusHours', label: 'Focus hours', color: CATEGORY_COLORS.focus },
+              { key: 'meetingHours', label: 'Meeting hours', color: CATEGORY_COLORS.meeting },
             ]}
           />
         </Panel>
 
         <Panel title="Fragmentation over time" hint="Unusable short gaps between meetings per week">
-          <MultiLineChart
-            weekKeys={weekKeys}
-            yLabel="Gaps"
-            lines={[
-              { key: 'frag', label: 'Unusable gaps', color: CATEGORY_COLORS.messaging, values: weeks.map((w) => w.fragmentationCount) },
-            ]}
+          <TrendChart
+            data={chartData}
+            series={[{ key: 'fragmentation', label: 'Unusable gaps', color: CATEGORY_COLORS.messaging }]}
           />
         </Panel>
       </div>

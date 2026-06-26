@@ -5,6 +5,8 @@
 import { useMemo } from 'react'
 import InsightCards from '../InsightCards.jsx'
 import GoalProgress from '../GoalProgress.jsx'
+import Donut from '../charts/Donut.jsx'
+import ProgressRing from '../charts/ProgressRing.jsx'
 import TimeBreakdown from '../panels/TimeBreakdown.jsx'
 import EndOfDayOverrun from '../panels/EndOfDayOverrun.jsx'
 import { dayQualityLabel, endOfDayOverrun } from '../../analysis/overview.js'
@@ -14,6 +16,15 @@ import { computeFocusDebt } from '../../analysis/focusDebt.js'
 import { getSettings } from '../../utils/settings.js'
 import { getAllWeeks } from '../../storage/history.js'
 import { isoWeekKey } from '../../utils/ranges.js'
+import { CATEGORIES, CATEGORY_LABELS, CATEGORY_COLORS } from '../../analysis/classify.js'
+import { formatDuration } from '../../utils/time.js'
+
+const MINUTES_FIELD = {
+  meeting: 'meetingMinutes',
+  focus: 'focusMinutes',
+  comms: 'messagingMinutes',
+  shallow: 'shallowMinutes',
+}
 
 export default function OverviewTab({ insights, trends, days, workingStart, workingEnd, onSelectDay }) {
   const settings = getSettings()
@@ -54,13 +65,36 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
     }
   }
 
+  const donutData = useMemo(() => {
+    const total = CATEGORIES.reduce((a, k) => a + (insights[MINUTES_FIELD[k]] || 0), 0) || 1
+    return CATEGORIES.map((k) => {
+      const minutes = insights[MINUTES_FIELD[k]] || 0
+      return {
+        key: k,
+        label: CATEGORY_LABELS[k],
+        color: CATEGORY_COLORS[k],
+        value: minutes,
+        display: `${formatDuration(minutes)} · ${Math.round((minutes / total) * 100)}%`,
+      }
+    })
+  }, [insights])
+
   return (
     <>
       <div className="overview__actions">
         <button onClick={handleExport}>Export PDF</button>
       </div>
-      <InsightCards insights={insights} trends={trends} />
+
+      <div className="hero">
+        <ProgressRing pct={Math.round(insights.focusRate)} color={CATEGORY_COLORS.focus} size={132}>
+          <span className="hero__ring-value">{Math.round(insights.focusRate)}%</span>
+          <span className="hero__ring-label">focus rate</span>
+        </ProgressRing>
+        <Donut data={donutData} centerValue={formatDuration(insights.focusMinutes)} centerLabel="deep focus" />
+      </div>
+
       {benchmark && <p className="benchmark">{benchmark}</p>}
+      <InsightCards insights={insights} trends={trends} />
       {focusDebt.streak >= 3 && (
         <p className="focus-debt">
           You've had {focusDebt.streak} days in a row with little deep focus — you may be due for a
