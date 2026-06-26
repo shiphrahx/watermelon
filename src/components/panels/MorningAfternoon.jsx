@@ -30,7 +30,7 @@ export default function MorningAfternoon({ split }) {
     >
       <div className="split-bar">
         <div className="split-bar__seg" style={{ width: `${morningPct}%`, backgroundColor: CATEGORY_COLORS.focus }} />
-        <div className="split-bar__seg" style={{ width: `${afternoonPct}%`, backgroundColor: CATEGORY_COLORS.adhoc }} />
+        <div className="split-bar__seg" style={{ width: `${afternoonPct}%`, backgroundColor: '#9ad9bb' }} />
       </div>
       <div className="split-row">
         <span>Morning (09:00–12:00)</span>
