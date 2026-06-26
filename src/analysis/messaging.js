@@ -7,6 +7,15 @@
 import { parseTimeToMinutes, minutesToTimeLabel } from '../utils/time.js'
 import { isWeekday } from '../utils/ranges.js'
 import { weekdayName } from './insights.js'
+import { normalizeMeetingTitle } from './meetings.js'
+
+// Count messages sent during an event's time window. Shared by the
+// multitasking and decline-candidate calculations.
+export function countMessagesDuring(messages, event) {
+  const s = event.start.getTime()
+  const en = event.end.getTime()
+  return (messages || []).filter((m) => m.timestamp >= s && m.timestamp < en).length
+}
 
 function weekdays(days) {
   return days.filter((d) => isWeekday(d.dateKey))
@@ -62,9 +71,7 @@ export function meetingMultitasking(days) {
     const events = d.events || []
     const messages = d.messages || []
     for (const e of events) {
-      const s = e.start.getTime()
-      const en = e.end.getTime()
-      const count = messages.filter((m) => m.timestamp >= s && m.timestamp < en).length
+      const count = countMessagesDuring(messages, e)
       if (count === 0) continue
       total += count
       const prev = byTitle.get(e.subject) || { messages: 0, occurrences: 0 }
@@ -78,6 +85,34 @@ export function meetingMultitasking(days) {
     .map(([subject, v]) => ({ subject, messages: v.messages, occurrences: v.occurrences }))
     .sort((a, b) => b.messages - a.messages)
   return { total, perMeeting }
+}
+
+// Possible decline candidates: recurring meetings the user reliably messages
+// through. Flag when messages occur in > 50% of occurrences AND the average is
+// 3+ messages per occurrence. Returns flagged meetings sorted by avg desc.
+export function declineCandidates(days) {
+  const groups = new Map()
+  for (const d of weekdays(days)) {
+    for (const e of d.events || []) {
+      const key = normalizeMeetingTitle(e.subject)
+      if (!key) continue
+      const count = countMessagesDuring(d.messages, e)
+      const g = groups.get(key) || {
+        title: (e.subject || '').trim(),
+        occurrences: 0,
+        withMessages: 0,
+        totalMessages: 0,
+      }
+      g.occurrences += 1
+      if (count > 0) g.withMessages += 1
+      g.totalMessages += count
+      groups.set(key, g)
+    }
+  }
+  return [...groups.values()]
+    .map((g) => ({ ...g, avgMessages: g.totalMessages / g.occurrences }))
+    .filter((g) => g.occurrences > 0 && g.withMessages / g.occurrences > 0.5 && g.avgMessages >= 3)
+    .sort((a, b) => b.avgMessages - a.avgMessages)
 }
 
 // Context switches: fixed 15-min bins per day containing >= `threshold`
