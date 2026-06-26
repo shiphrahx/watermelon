@@ -1,37 +1,28 @@
-// Weekly deep-focus goal progress bar + pace state. Renders nothing when no
-// goal is set.
+// Weekly deep-focus goal as a progress ring + pace state. Nothing when no goal.
 
+import ProgressRing from './charts/ProgressRing.jsx'
 import { CATEGORY_COLORS } from '../analysis/classify.js'
 import { formatDuration } from '../utils/time.js'
-
-const STATE_CLASS = {
-  'On track': 'goal--ontrack',
-  Behind: 'goal--behind',
-  Met: 'goal--met',
-  Exceeded: 'goal--met',
-}
 
 export default function GoalProgress({ progress }) {
   if (!progress) return null
   const { goalMinutes, focusMinutes, pct, state } = progress
-  const width = Math.min(100, pct)
 
   return (
-    <div className={`goal ${STATE_CLASS[state] || ''}`}>
-      <div className="goal__head">
-        <span className="goal__label">Weekly focus goal</span>
-        <span className={`goal__state goal__state--${state.replace(/\s+/g, '-').toLowerCase()}`}>
-          {state}
-        </span>
-      </div>
-      <div className="goal__bar">
-        <div
-          className="goal__fill"
-          style={{ width: `${width}%`, backgroundColor: CATEGORY_COLORS.focus }}
-        />
-      </div>
-      <div className="goal__caption">
-        {formatDuration(focusMinutes)} of {formatDuration(goalMinutes)} goal — {pct}%
+    <div className="goal2">
+      <ProgressRing pct={pct} color={CATEGORY_COLORS.focus} size={108}>
+        <span className="goal2__pct">{pct}%</span>
+      </ProgressRing>
+      <div className="goal2__body">
+        <div className="goal2__head">
+          <span className="goal2__label">Weekly focus goal</span>
+          <span className={`goal__state goal__state--${state.replace(/\s+/g, '-').toLowerCase()}`}>
+            {state}
+          </span>
+        </div>
+        <div className="goal2__caption">
+          {formatDuration(focusMinutes)} of {formatDuration(goalMinutes)}
+        </div>
       </div>
     </div>
   )
