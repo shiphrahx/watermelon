@@ -11,6 +11,8 @@ import {
 import { isSlackConnected, loginSlack, logoutSlack } from '../auth/slack.js'
 import { getSettings, saveSettings } from '../utils/settings.js'
 import { clearHistory } from '../storage/history.js'
+import { eraseLocalData } from '../storage/erase.js'
+import { MS_SCOPES, SLACK_SCOPES } from '../config.js'
 
 export default function Settings() {
   const [msConnected, setMsConnected] = useState(false)
@@ -72,6 +74,36 @@ export default function Settings() {
     if (!window.confirm('Clear all stored weekly summaries? This cannot be undone.')) return
     clearHistory()
     setHistoryCleared(true)
+  }
+
+  const [erased, setErased] = useState(false)
+  async function handleEraseEverything() {
+    if (
+      !window.confirm(
+        'Disconnect all accounts and erase every stored summary, correction, goal and setting on this device? This cannot be undone.',
+      )
+    )
+      return
+    eraseLocalData()
+    try {
+      if (isMicrosoftConnected()) await logoutMicrosoft()
+    } catch {
+      // best-effort sign-out
+    }
+    logoutSlack()
+    setMsConnected(false)
+    setSlackConnected(false)
+    setSettings(getSettings())
+    setErased(true)
+  }
+
+  const SCOPE_PURPOSE = {
+    'Calendars.Read': 'Read your calendar event times to detect meetings',
+    'Chat.Read': 'Read Teams message timestamps to detect messaging activity',
+    'User.Read': 'Read your basic profile to identify your own messages',
+    'channels:history': 'Read channel message timestamps to detect messaging activity',
+    'im:history': 'Read DM message timestamps to detect messaging activity',
+    'calls:read': 'Detect Slack call activity',
   }
 
   return (
@@ -192,6 +224,32 @@ export default function Settings() {
             Clear history
           </button>
           {historyCleared && <span className="muted">History cleared ✓</span>}
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Privacy</h2>
+        <p className="muted">
+          Watermelon runs entirely in your browser. It reads only <strong>metadata</strong> —
+          event times and message timestamps, never message text or event details. Only small
+          aggregated weekly summaries are stored locally on this device. Nothing is ever sent to any
+          third-party server (Slack data passes through a proxy you control purely for CORS).
+        </p>
+
+        <h3 style={{ fontSize: '0.95rem', margin: '0.75rem 0 0.4rem' }}>Requested permissions</h3>
+        <ul className="scope-list">
+          {[...MS_SCOPES, ...SLACK_SCOPES].map((scope) => (
+            <li key={scope}>
+              <code>{scope}</code> — {SCOPE_PURPOSE[scope] || 'Used to analyse your activity'}
+            </li>
+          ))}
+        </ul>
+
+        <div className="actions">
+          <button className="danger" onClick={handleEraseEverything}>
+            Disconnect and erase everything
+          </button>
+          {erased && <span className="muted">Everything erased ✓</span>}
         </div>
       </div>
     </section>

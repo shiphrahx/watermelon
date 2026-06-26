@@ -1210,3 +1210,41 @@ button.danger:hover {
   justify-content: flex-end;
   margin-bottom: 0.75rem;
 }
+
+/* Privacy notice + scope list */
+.privacy-notice {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #eef4fb;
+  border: 1px solid #cdddf0;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.privacy-notice p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.privacy-notice button {
+  white-space: nowrap;
+}
+
+.scope-list {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.scope-list li {
+  margin-bottom: 0.3rem;
+}
+
+.scope-list code {
+  background: #f1f1ee;
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+}

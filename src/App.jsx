@@ -7,6 +7,7 @@ import { hasSlackRedirectParams, completeSlackLogin } from './auth/slack.js'
 import { initMicrosoft } from './auth/microsoft.js'
 import { toDateKey } from './utils/time.js'
 import { USE_MOCK } from './mock/index.js'
+import PrivacyNotice from './components/PrivacyNotice.jsx'
 
 export default function App() {
   const navigate = useNavigate()
@@ -50,6 +51,7 @@ export default function App() {
       </header>
 
       <main className="app__main">
+        <PrivacyNotice />
         <Outlet />
       </main>
 
