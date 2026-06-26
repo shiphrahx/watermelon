@@ -1644,3 +1644,29 @@ button.danger:hover {
   .pill--warn { background: #3a2a1a; color: #f3b27a; }
 }
 .recurring-row { cursor: pointer; }
+
+/* Day-quality pills with hue per label (#46) */
+.day-pill--protected { background: var(--accent-soft); color: var(--accent); }
+.day-pill--meeting { background: #e8effc; color: #3a6fd0; }
+.day-pill--reactive { background: #fdeee0; color: #b4632a; }
+.day-pill--scattered,
+.day-pill--mixed { background: #eef0f2; color: var(--muted); }
+@media (prefers-color-scheme: dark) {
+  .day-pill--meeting { background: #1b2740; color: #8fb4f5; }
+  .day-pill--reactive { background: #3a2a1a; color: #f3b27a; }
+  .day-pill--scattered,
+  .day-pill--mixed { background: #262b32; color: var(--muted); }
+}
+.day-tag { /* legacy → match pill */
+  display: inline-block;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  margin-left: 8px;
+}
+.day-pill--protected,
+.day-pill--meeting,
+.day-pill--reactive,
+.day-pill--scattered,
+.day-pill--mixed { margin-left: 8px; }

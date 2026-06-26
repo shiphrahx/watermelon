@@ -26,18 +26,20 @@ export default function RangePicker({ presetId, range, onPreset, onNavigateWeek,
         </button>
       </div>
 
-      <select
-        className="preset-select"
-        value={presetId}
-        onChange={(e) => onPreset(e.target.value)}
-        aria-label="Date range preset"
-      >
+      <div className="segmented" role="tablist" aria-label="Date range preset">
         {RANGE_PRESETS.map((p) => (
-          <option key={p.id} value={p.id}>
+          <button
+            key={p.id}
+            type="button"
+            role="tab"
+            aria-selected={presetId === p.id}
+            className={`segmented__btn${presetId === p.id ? ' segmented__btn--active' : ''}`}
+            onClick={() => onPreset(p.id)}
+          >
             {p.label}
-          </option>
+          </button>
         ))}
-      </select>
+      </div>
 
       {isCustom && (
         <div className="range-inputs">

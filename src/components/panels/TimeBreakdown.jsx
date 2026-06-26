@@ -51,7 +51,9 @@ export default function TimeBreakdown({ perDay = [], onSelectDay, qualityLabels 
                 day.weekday
               )}
               {qualityLabels[day.dateKey] && (
-                <span className="day-tag">{qualityLabels[day.dateKey]}</span>
+                <span className={`pill day-pill--${qualityLabels[day.dateKey].split(' ')[0].toLowerCase()}`}>
+                  {qualityLabels[day.dateKey]}
+                </span>
               )}
             </span>
             <StackedBar day={day} />
