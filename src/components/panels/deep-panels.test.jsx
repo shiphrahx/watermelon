@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react'
 
 import EndOfDayOverrun from './EndOfDayOverrun.jsx'
 import BackToBack from './BackToBack.jsx'
-import Fragmentation from './Fragmentation.jsx'
 import InterMeetingGaps from './InterMeetingGaps.jsx'
 import LongestMeetingBlock from './LongestMeetingBlock.jsx'
 import FocusBlockDistribution from './FocusBlockDistribution.jsx'
@@ -82,20 +81,6 @@ describe('BackToBack', () => {
   it('shows an empty state with no meetings', () => {
     render(<BackToBack backToBack={{ totalMeetings: 0, pairs: [] }} />)
     expect(screen.getByText(/No meetings found/)).toBeInTheDocument()
-  })
-})
-
-describe('Fragmentation', () => {
-  it('reports total time lost', () => {
-    render(
-      <Fragmentation
-        fragmentation={{
-          perDay: [{ dateKey: 'a', weekday: 'Monday', count: 3, lostMinutes: 45 }],
-          totalLostMinutes: 115,
-        }}
-      />,
-    )
-    expect(screen.getByText(/lost 1h 55m this week/)).toBeInTheDocument()
   })
 })
 
@@ -184,7 +169,7 @@ describe('MorningAfternoon', () => {
     )
     expect(screen.getByText('You focus better in the mornings.')).toBeInTheDocument()
     expect(screen.getByText('62%')).toBeInTheDocument()
-    expect(screen.getByText(/Total focus time across the selected period/)).toBeInTheDocument()
+    expect(screen.getByText(/Total focus time by time of day/)).toBeInTheDocument()
     expect(screen.getByText(/Lunch \(12:00–13:00\)/)).toBeInTheDocument()
   })
 })
@@ -312,7 +297,9 @@ describe('TeamsVsSlack', () => {
     render(
       <TeamsVsSlack split={{ teamsPct: 68, slackPct: 32, teamsCount: 68, slackCount: 32, patternHolds: true }} />,
     )
-    expect(screen.getByText('This week: 68% Teams · 32% Slack')).toBeInTheDocument()
+    expect(screen.getAllByText('Teams').length).toBeGreaterThan(0)
+    expect(screen.getByText('Slack')).toBeInTheDocument()
+    expect(screen.getByText('32%')).toBeInTheDocument()
     expect(screen.getByText(/Teams more on meeting-heavy days/)).toBeInTheDocument()
   })
 

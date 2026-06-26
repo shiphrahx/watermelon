@@ -1,6 +1,7 @@
-// Focus panel — morning vs afternoon focus split (lunch shown separately).
+// Focus panel — morning vs afternoon focus split as a donut (lunch excluded).
 
 import Panel from '../Panel.jsx'
+import Donut from '../charts/Donut.jsx'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
 import { formatDuration } from '../../utils/time.js'
 
@@ -14,6 +15,23 @@ export default function MorningAfternoon({ split }) {
     better,
   } = split || {}
 
+  const data = [
+    {
+      key: 'morning',
+      label: 'Morning (09:00–12:00)',
+      color: CATEGORY_COLORS.focus,
+      value: morningMinutes,
+      display: `${morningPct}% · ${formatDuration(morningMinutes)}`,
+    },
+    {
+      key: 'afternoon',
+      label: 'Afternoon (13:00–18:00)',
+      color: '#9ad9bb',
+      value: afternoonMinutes,
+      display: `${afternoonPct}% · ${formatDuration(afternoonMinutes)}`,
+    },
+  ]
+
   const label =
     better === 'morning'
       ? 'You focus better in the mornings.'
@@ -23,29 +41,21 @@ export default function MorningAfternoon({ split }) {
 
   return (
     <Panel
-      title="Morning vs afternoon split"
-      hint="Total focus time across the selected period, split by time of day"
+      title="Morning vs afternoon"
+      hint="Total focus time by time of day (lunch excluded)"
       isEmpty={morningMinutes + afternoonMinutes === 0}
       emptyMessage="No focus blocks detected — try a wider date range."
     >
-      <div className="split-bar">
-        <div className="split-bar__seg" style={{ width: `${morningPct}%`, backgroundColor: CATEGORY_COLORS.focus }} />
-        <div className="split-bar__seg" style={{ width: `${afternoonPct}%`, backgroundColor: '#9ad9bb' }} />
-      </div>
-      <div className="split-row">
-        <span>Morning (09:00–12:00)</span>
-        <span className="muted">{morningPct}%</span>
-        <span>{formatDuration(morningMinutes)}</span>
-      </div>
-      <div className="split-row">
-        <span>Afternoon (13:00–18:00)</span>
-        <span className="muted">{afternoonPct}%</span>
-        <span>{formatDuration(afternoonMinutes)}</span>
-      </div>
-      <p className="panel__hint" style={{ marginBottom: 0 }}>
-        Lunch (12:00–13:00){lunchMinutes > 0 ? `: ${formatDuration(lunchMinutes)} of focus` : ''} is
-        excluded from the split.
-      </p>
+      <Donut
+        data={data}
+        centerValue={`${Math.max(morningPct, afternoonPct)}%`}
+        centerLabel={better === 'afternoon' ? 'afternoon' : 'morning'}
+      />
+      {lunchMinutes > 0 && (
+        <p className="panel__hint" style={{ marginBottom: 0 }}>
+          Lunch (12:00–13:00): {formatDuration(lunchMinutes)} excluded.
+        </p>
+      )}
       {label && <p className="highlight-note">{label}</p>}
     </Panel>
   )

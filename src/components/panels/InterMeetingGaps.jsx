@@ -1,14 +1,28 @@
-// Meetings panel — distribution of gaps between accepted meetings, bucketed by
-// usefulness. Leads with the distribution (no misleading average); the
-// "Too short to use" bucket is highlighted in amber.
+// Meetings panel — distribution of gaps between accepted meetings as a donut.
+// The "too short to use" slice is highlighted in amber via the summary line.
 
 import Panel from '../Panel.jsx'
+import Donut from '../charts/Donut.jsx'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
 import { formatDuration } from '../../utils/time.js'
 
+const COLORS = {
+  tooShort: CATEGORY_COLORS.messaging, // amber — draw attention
+  short: '#A8C5E8',
+  comfortable: CATEGORY_COLORS.meeting,
+  long: CATEGORY_COLORS.focus,
+}
+
 export default function InterMeetingGaps({ gaps }) {
   const { buckets = [], totalGaps = 0, tooShortCount = 0, tooShortMinutes = 0 } = gaps || {}
-  const maxCount = Math.max(1, ...buckets.map((b) => b.count))
+
+  const data = buckets.map((b) => ({
+    key: b.key,
+    label: b.label,
+    color: COLORS[b.key] || CATEGORY_COLORS.meeting,
+    value: b.count,
+    display: `${b.count} · ${formatDuration(b.minutes)}`,
+  }))
 
   return (
     <Panel
@@ -17,28 +31,7 @@ export default function InterMeetingGaps({ gaps }) {
       isEmpty={totalGaps === 0}
       emptyMessage="No gaps between meetings this period."
     >
-      <div className="hbar-list">
-        {buckets.map((b) => {
-          const isTooShort = b.key === 'tooShort'
-          return (
-            <div className="hbar-row" key={b.key}>
-              <span className="hbar-row__label">{b.label}</span>
-              <div className="hbar-track" title={`${b.label} · ${b.count} gaps · ${formatDuration(b.minutes)}`}>
-                <div
-                  className="hbar-fill"
-                  style={{
-                    width: `${(b.count / maxCount) * 100}%`,
-                    backgroundColor: isTooShort ? CATEGORY_COLORS.messaging : CATEGORY_COLORS.meetings,
-                  }}
-                />
-              </div>
-              <span className="hbar-row__value">
-                {b.count} {b.count === 1 ? 'gap' : 'gaps'} · {formatDuration(b.minutes)}
-              </span>
-            </div>
-          )
-        })}
-      </div>
+      <Donut data={data} centerValue={totalGaps} centerLabel="gaps" />
       <p className="highlight-note" style={{ color: CATEGORY_COLORS.messaging }}>
         {tooShortCount} {tooShortCount === 1 ? 'gap was' : 'gaps were'} too short to use, costing you{' '}
         {formatDuration(tooShortMinutes)} of recoverable time.

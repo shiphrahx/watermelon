@@ -1,7 +1,7 @@
-// Messaging panel — response-speed buckets from in-thread gaps.
+// Messaging panel — response-speed split as a donut.
 
 import Panel from '../Panel.jsx'
-import HBarChart from '../charts/HBarChart.jsx'
+import Donut from '../charts/Donut.jsx'
 import { CATEGORY_COLORS } from '../../analysis/classify.js'
 
 export default function ResponsePattern({ pattern }) {
@@ -15,15 +15,15 @@ export default function ResponsePattern({ pattern }) {
     )
   }
 
-  const rows = [
-    { key: 'immediate', label: 'Immediate responses', pct: pattern.immediate, color: CATEGORY_COLORS.messaging },
-    { key: 'considered', label: 'Considered responses', pct: pattern.considered, color: CATEGORY_COLORS.meetings },
-    { key: 'async', label: 'Async responses', pct: pattern.async, color: CATEGORY_COLORS.focus },
-  ].map((r) => ({ key: r.key, label: r.label, value: `${r.pct}%`, fillRatio: r.pct / 100, color: r.color }))
+  const data = [
+    { key: 'immediate', label: 'Immediate (<5m)', color: CATEGORY_COLORS.messaging, value: pattern.immediate, display: `${pattern.immediate}%` },
+    { key: 'considered', label: 'Considered (5–30m)', color: CATEGORY_COLORS.meeting, value: pattern.considered, display: `${pattern.considered}%` },
+    { key: 'async', label: 'Async (30m+)', color: CATEGORY_COLORS.focus, value: pattern.async, display: `${pattern.async}%` },
+  ]
 
   return (
-    <Panel title="Response pattern">
-      <HBarChart rows={rows} />
+    <Panel title="Response pattern" hint="How quickly you reply after someone else">
+      <Donut data={data} centerValue={`${pattern.immediate}%`} centerLabel="immediate" />
       <p className="highlight-note">
         You respond immediately to {pattern.immediate}% of messages — this may be interrupting your
         focus time.
