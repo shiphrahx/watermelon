@@ -69,9 +69,10 @@ describe('TabBar', () => {
 })
 
 describe('tab rendering (no raw category keys leak)', () => {
-  it('Overview renders without raw keys', () => {
+  it('Overview renders without raw keys and includes Shallow work in the legend', () => {
     const { container } = render(<OverviewTab {...tabProps} />)
     expect(screen.getByText('Time breakdown')).toBeInTheDocument()
+    expect(screen.getAllByText('Shallow work').length).toBeGreaterThan(0)
     expect(container.textContent).not.toMatch(/comms|possible-adhoc/)
   })
 
