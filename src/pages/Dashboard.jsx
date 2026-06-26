@@ -15,6 +15,7 @@ import { SkeletonCards, SkeletonPanel } from '../components/Skeleton.jsx'
 import ErrorState from '../components/ErrorState.jsx'
 import { useDashboardData } from '../hooks/useProductivityData.js'
 import { weeklySummarySentence } from '../analysis/insights.js'
+import { getSettings } from '../utils/settings.js'
 import { RANGE_PRESETS, thisWeekRange, navigateWeek } from '../utils/ranges.js'
 
 const VALID_TABS = TABS.map((t) => t.id)
@@ -96,7 +97,7 @@ export default function Dashboard() {
           {tab === 'meetings' && <MeetingsTab {...tabProps} />}
           {tab === 'focus' && <FocusTab {...tabProps} />}
           {tab === 'messaging' && <MessagingTab {...tabProps} />}
-          {tab === 'trends' && <TrendsTab />}
+          {tab === 'trends' && <TrendsTab goalHours={Number(getSettings().focusGoalHours) || undefined} />}
         </>
       )}
     </section>

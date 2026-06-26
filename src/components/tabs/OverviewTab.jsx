@@ -4,11 +4,16 @@
 
 import { useMemo } from 'react'
 import InsightCards from '../InsightCards.jsx'
+import GoalProgress from '../GoalProgress.jsx'
 import TimeBreakdown from '../panels/TimeBreakdown.jsx'
 import EndOfDayOverrun from '../panels/EndOfDayOverrun.jsx'
 import { dayQualityLabel, endOfDayOverrun } from '../../analysis/overview.js'
+import { computeGoalProgress } from '../../analysis/goal.js'
+import { getSettings } from '../../utils/settings.js'
 
 export default function OverviewTab({ insights, trends, days, workingStart, workingEnd, onSelectDay }) {
+  const settings = getSettings()
+
   const qualityLabels = useMemo(() => {
     const map = {}
     for (const d of days) {
@@ -19,10 +24,15 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
   }, [days, workingStart, workingEnd])
 
   const overrun = useMemo(() => endOfDayOverrun(days, workingEnd), [days, workingEnd])
+  const goalProgress = useMemo(
+    () => computeGoalProgress(insights, settings.focusGoalHours),
+    [insights, settings.focusGoalHours],
+  )
 
   return (
     <>
       <InsightCards insights={insights} trends={trends} />
+      <GoalProgress progress={goalProgress} />
       <div className="panels">
         <TimeBreakdown perDay={insights.perDay} onSelectDay={onSelectDay} qualityLabels={qualityLabels} />
         <EndOfDayOverrun overrun={overrun} workingEnd={workingEnd} />

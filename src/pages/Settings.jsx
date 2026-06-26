@@ -139,6 +139,31 @@ export default function Settings() {
           </label>
         </div>
 
+        <h2>Goals &amp; focus</h2>
+        <div className="field-row">
+          <label>
+            <span>Weekly deep focus goal (hours)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              placeholder="e.g. 15"
+              value={settings.focusGoalHours}
+              onChange={(e) => handleField('focusGoalHours', e.target.value)}
+            />
+          </label>
+          <label>
+            <span>Low-focus day threshold (hours)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={settings.lowFocusThresholdHours}
+              onChange={(e) => handleField('lowFocusThresholdHours', Number(e.target.value))}
+            />
+          </label>
+        </div>
+
         <h2>Slack proxy</h2>
         <label className="field-full">
           <span>Cloudflare Worker URL</span>

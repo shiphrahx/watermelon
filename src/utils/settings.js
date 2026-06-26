@@ -9,6 +9,8 @@ const DEFAULTS = {
   workingHoursStart: '09:00',
   workingHoursEnd: '18:00',
   slackProxyUrl: DEFAULT_SLACK_PROXY_URL,
+  focusGoalHours: '', // weekly deep-focus goal in hours; empty = no goal
+  lowFocusThresholdHours: 1, // a "low-focus day" has deep focus under this
 }
 
 export function getSettings() {

@@ -1019,3 +1019,56 @@ button.danger:hover {
   color: var(--muted);
   margin-top: 0.5rem;
 }
+
+/* Weekly focus goal */
+.goal {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.goal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.goal__label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.goal__state {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+}
+
+.goal__state--on-track { color: var(--color-focus); background: #e6f4ea; }
+.goal__state--met,
+.goal__state--exceeded { color: #fff; background: var(--color-focus); }
+.goal__state--behind { color: var(--melon-red); background: #fdecec; }
+
+.goal__bar {
+  height: 12px;
+  background: #f1f1ee;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.goal__fill {
+  height: 100%;
+  border-radius: 6px;
+}
+
+.goal__caption {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
