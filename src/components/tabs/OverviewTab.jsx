@@ -9,7 +9,10 @@ import TimeBreakdown from '../panels/TimeBreakdown.jsx'
 import EndOfDayOverrun from '../panels/EndOfDayOverrun.jsx'
 import { dayQualityLabel, endOfDayOverrun } from '../../analysis/overview.js'
 import { computeGoalProgress } from '../../analysis/goal.js'
+import { benchmarkWeek } from '../../analysis/benchmark.js'
 import { getSettings } from '../../utils/settings.js'
+import { getAllWeeks } from '../../storage/history.js'
+import { isoWeekKey } from '../../utils/ranges.js'
 
 export default function OverviewTab({ insights, trends, days, workingStart, workingEnd, onSelectDay }) {
   const settings = getSettings()
@@ -29,9 +32,15 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
     [insights, settings.focusGoalHours],
   )
 
+  const benchmark = useMemo(() => {
+    if (!days.length) return null
+    return benchmarkWeek(getAllWeeks(), isoWeekKey(days[0].dateKey))
+  }, [days])
+
   return (
     <>
       <InsightCards insights={insights} trends={trends} />
+      {benchmark && <p className="benchmark">{benchmark}</p>}
       <GoalProgress progress={goalProgress} />
       <div className="panels">
         <TimeBreakdown perDay={insights.perDay} onSelectDay={onSelectDay} qualityLabels={qualityLabels} />

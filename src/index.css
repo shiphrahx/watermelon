@@ -1099,3 +1099,10 @@ button.danger:hover {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+.benchmark {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-focus);
+  margin: 0 0 1rem;
+}
