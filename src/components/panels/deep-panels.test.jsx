@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 import EndOfDayOverrun from './EndOfDayOverrun.jsx'
 import BackToBack from './BackToBack.jsx'
@@ -62,20 +62,22 @@ describe('EndOfDayOverrun', () => {
 
 
 describe('BackToBack', () => {
-  it('shows the rate and pairs', () => {
-    render(
-      <BackToBack
-        backToBack={{
-          totalMeetings: 11,
-          count: 4,
-          rate: 36,
-          pairs: [{ weekday: 'Monday', from: 'Standup', to: 'Product sync', gapMinutes: 0 }],
-        }}
-      />,
-    )
+  const data = {
+    totalMeetings: 11,
+    count: 4,
+    rate: 36,
+    pairs: [{ weekday: 'Monday', from: 'Standup', to: 'Product sync', gapMinutes: 0 }],
+  }
+
+  it('shows only the rate + mini visual at rest; pairs on hover', () => {
+    const { container } = render(<BackToBack backToBack={data} />)
     expect(screen.getByText('36%')).toBeInTheDocument()
-    expect(screen.getByText(/4 out of 11 meetings/)).toBeInTheDocument()
-    expect(screen.getByText(/Standup → Product sync/)).toBeInTheDocument()
+    expect(container.querySelectorAll('.miniseg__cell')).toHaveLength(11)
+    // pairs are NOT permanently on the card
+    expect(screen.queryByText(/Standup → Product sync/)).toBeNull()
+    // ...they appear on hover
+    fireEvent.mouseEnter(container.querySelector('.b2b'))
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Standup → Product sync')
   })
 
   it('shows an empty state with no meetings', () => {

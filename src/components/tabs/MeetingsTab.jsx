@@ -17,6 +17,8 @@ import {
 import { declineCandidates } from '../../analysis/messaging.js'
 import { recurringAudit } from '../../analysis/recurring.js'
 import { getAllWeeks } from '../../storage/history.js'
+import KpiCard from '../ui/KpiCard.jsx'
+import { formatDuration } from '../../utils/time.js'
 
 export default function MeetingsTab({ days }) {
   const data = useMemo(
@@ -32,13 +34,22 @@ export default function MeetingsTab({ days }) {
   )
 
   return (
-    <div className="panels">
-      <RecurringMeetingCost audit={data.recurring} />
-      <DeclineCandidates candidates={data.decline} />
-      <BackToBack backToBack={data.b2b} />
-      <InterMeetingGaps gaps={data.gaps} />
-      <TopConsumers topConsumers={data.consumers} />
-      <LongestMeetingBlock block={data.longest} />
-    </div>
+    <>
+      <div className="insight-cards">
+        <KpiCard icon="🔁" label="Back-to-back" value={`${Math.round(data.b2b.rate)}%`} />
+        <KpiCard icon="🧩" label="Lost to short gaps" small value={formatDuration(data.gaps.tooShortMinutes)} />
+        <KpiCard icon="📋" label="Recurring meetings" value={data.recurring.items.length} />
+      </div>
+      <div className="split">
+        <RecurringMeetingCost audit={data.recurring} />
+        <DeclineCandidates candidates={data.decline} />
+      </div>
+      <div className="panels">
+        <BackToBack backToBack={data.b2b} />
+        <InterMeetingGaps gaps={data.gaps} />
+        <TopConsumers topConsumers={data.consumers} />
+        <LongestMeetingBlock block={data.longest} />
+      </div>
+    </>
   )
 }

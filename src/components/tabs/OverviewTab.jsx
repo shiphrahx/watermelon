@@ -89,24 +89,31 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
         <button onClick={handleExport}>Export PDF</button>
       </div>
 
-      <div className="hero">
-        <ProgressRing pct={Math.round(insights.focusRate)} color={CATEGORY_COLORS.focus} size={132}>
-          <span className="hero__ring-value">{Math.round(insights.focusRate)}%</span>
-          <span className="hero__ring-label">focus rate</span>
-        </ProgressRing>
-        <Donut data={donutData} centerValue={formatDuration(insights.focusMinutes)} centerLabel="deep focus" />
-      </div>
+      {/* stat row */}
+      <InsightCards insights={insights} trends={trends} />
 
       {benchmark && <p className="benchmark">{benchmark}</p>}
-      <InsightCards insights={insights} trends={trends} />
       {focusDebt.streak >= 3 && (
         <p className="focus-debt">
           You've had {focusDebt.streak} days in a row with little deep focus — you may be due for a
           protected block.
         </p>
       )}
-      <GoalProgress progress={goalProgress} />
-      <div className="panels">
+
+      {/* primary + secondary split */}
+      <div className="split">
+        <div className="hero">
+          <ProgressRing pct={Math.round(insights.focusRate)} color={CATEGORY_COLORS.focus} size={132}>
+            <span className="hero__ring-value">{Math.round(insights.focusRate)}%</span>
+            <span className="hero__ring-label">focus rate</span>
+          </ProgressRing>
+          <Donut data={donutData} centerValue={formatDuration(insights.focusMinutes)} centerLabel="deep focus" />
+        </div>
+        <GoalProgress progress={goalProgress} />
+      </div>
+
+      {/* detail grid */}
+      <div className="split">
         <TimeBreakdown perDay={insights.perDay} onSelectDay={onSelectDay} qualityLabels={qualityLabels} />
         <EndOfDayOverrun overrun={overrun} workingEnd={workingEnd} />
       </div>

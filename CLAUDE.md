@@ -121,6 +121,26 @@ cd cloudflare && npx wrangler deploy
   import.meta.env.BASE_URL`, so it must be registered (with trailing slash) in
   both Azure AD and Slack. See `DEPLOY.md`.
 
+## Design system (visual overhaul)
+
+- Design tokens live at the top of `src/index.css`: a strict type scale
+  (`--font-hero/value/title/label/caption`), card tokens (`--radius` 16,
+  `--card-shadow`, `--card-pad`, `--gap`), accent (`--accent` = focus green) and
+  delta colours, with a full **dark-mode** block (`prefers-color-scheme`). Use
+  only these sizes; weights are 400/600 only; sentence case.
+- **Inter** is self-hosted via `@fontsource/inter` (no CDN), imported in
+  `main.jsx`.
+- Shared UI primitives in `src/components/ui/`: `Card`, `Tooltip`, `HoverInfo`
+  (the single hover/tap reveal mechanism — every widget's detail goes through
+  it), `KpiCard`, `MiniSparkline`.
+- Charts: Recharts donuts/areas plus `charts/HBarChart` (greyed bars, accent
+  highlight, values on hover via `HoverInfo`).
+- Widgets are **visual-first**: at rest show title + the key visual; exact
+  numbers/lists appear on hover/tap. Statuses are tinted pills (`.pill`,
+  `.day-pill--*`); the date range is a segmented control (`.segmented`).
+- Every tab follows the rhythm: stat row (`KpiCard`s) → primary+secondary
+  `.split` → detail `.panels` grid.
+
 ## Conventions
 
 - Plain CSS only (no UI framework); styles live in `src/index.css`.

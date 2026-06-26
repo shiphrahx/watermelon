@@ -5,6 +5,8 @@ import App from './App.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import DayView from './pages/DayView.jsx'
 import Settings from './pages/Settings.jsx'
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/600.css'
 import './index.css'
 
 // HashRouter is used because GitHub Pages serves static files and cannot

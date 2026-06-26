@@ -37,7 +37,6 @@ export default function TimeBreakdown({ perDay = [], onSelectDay, qualityLabels 
     <Panel
       title="Time breakdown"
       hint="How each working day was spent"
-      wide
       isEmpty={!anyData}
       emptyMessage="No activity found for this period."
     >
@@ -51,7 +50,9 @@ export default function TimeBreakdown({ perDay = [], onSelectDay, qualityLabels 
                 day.weekday
               )}
               {qualityLabels[day.dateKey] && (
-                <span className="day-tag">{qualityLabels[day.dateKey]}</span>
+                <span className={`pill day-pill--${qualityLabels[day.dateKey].split(' ')[0].toLowerCase()}`}>
+                  {qualityLabels[day.dateKey]}
+                </span>
               )}
             </span>
             <StackedBar day={day} />
