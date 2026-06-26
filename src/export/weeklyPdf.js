@@ -68,39 +68,83 @@ export function pdfReportData(insights) {
   }
 }
 
-// --- PDF drawing helpers --------------------------------------------------
+// --- PDF layout engine ----------------------------------------------------
+// One cursor tracks the baseline Y of the *next* line. Every helper reserves
+// space (paginating if needed) and advances Y by a proper line-height, so
+// nothing overlaps and nothing runs off the page.
 const PAGE_H = 842
-const MARGIN = 40
-const BOTTOM = PAGE_H - 40
-const WIDTH = 515
+const TOP = 56
+const MARGIN = 44
+const BOTTOM = PAGE_H - 48
+const WIDTH = 595 - MARGIN * 2
+
+const lh = (size) => Math.round(size * 1.45)
 
 function makeCursor() {
-  return { y: 56 }
+  return { y: TOP }
 }
-function ensure(doc, cur, needed) {
+
+// Reserve `needed` pts of vertical space, starting a new page if it won't fit.
+function reserve(doc, cur, needed) {
   if (cur.y + needed > BOTTOM) {
     doc.addPage()
-    cur.y = 56
+    cur.y = TOP
   }
 }
-function heading(doc, cur, text) {
-  ensure(doc, cur, 30)
-  cur.y += 8
-  doc.setFontSize(15)
-  doc.setTextColor('#1f2933')
-  doc.text(text, MARGIN, cur.y)
-  doc.setDrawColor('#e5e7eb')
-  doc.line(MARGIN, cur.y + 4, MARGIN + WIDTH, cur.y + 4)
-  cur.y += 18
+
+function gap(cur, pts) {
+  cur.y += pts
 }
-function line(doc, cur, text, { size = 10, color = '#1f2933', indent = 0 } = {}) {
+
+// Write one or more wrapped lines of body text; advances the cursor.
+function text(doc, cur, str, { size = 10, color = '#1f2933', x = MARGIN, maxWidth = WIDTH } = {}) {
   doc.setFontSize(size)
   doc.setTextColor(color)
-  const lines = doc.splitTextToSize(text, WIDTH - indent)
-  for (const ln of lines) {
-    ensure(doc, cur, 14)
-    doc.text(ln, MARGIN + indent, cur.y)
-    cur.y += 14
+  doc.setFont('helvetica', 'normal')
+  for (const ln of doc.splitTextToSize(String(str), maxWidth)) {
+    reserve(doc, cur, lh(size))
+    doc.text(ln, x, cur.y)
+    cur.y += lh(size)
+  }
+}
+
+// Section heading with an underline rule and breathing room above/below.
+function heading(doc, cur, str) {
+  gap(cur, 16)
+  reserve(doc, cur, lh(14) + 10)
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor('#1f2933')
+  doc.text(str, MARGIN, cur.y)
+  doc.setDrawColor('#e5e7eb')
+  doc.line(MARGIN, cur.y + 6, MARGIN + WIDTH, cur.y + 6)
+  doc.setFont('helvetica', 'normal')
+  cur.y += lh(14) + 8
+}
+
+// A coloured swatch + label + right-aligned value on one row.
+function swatchRow(doc, cur, color, label, value) {
+  const rowH = 18
+  reserve(doc, cur, rowH)
+  doc.setFillColor(color)
+  doc.rect(MARGIN, cur.y - 8, 10, 10, 'F')
+  doc.setFontSize(10)
+  doc.setTextColor('#1f2933')
+  doc.text(label, MARGIN + 18, cur.y)
+  doc.setTextColor('#6b7280')
+  doc.text(String(value), MARGIN + WIDTH, cur.y, { align: 'right' })
+  cur.y += rowH
+}
+
+// Stamp "Watermelon · weekKey · page x/y" on the footer of every page.
+function stampFooter(doc, weekKey) {
+  const n = doc.getNumberOfPages()
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor('#9aa3ad')
+    doc.text(`Watermelon  ·  ${weekKey}  ·  ${i}/${n}`, MARGIN, PAGE_H - 26)
   }
 }
 
@@ -183,58 +227,63 @@ export function reportSections({ insights, days = [], workingStart = '09:00', wo
 }
 
 // --- Section renderers ----------------------------------------------------
+function drawHeader(doc, cur, data) {
+  reserve(doc, cur, lh(22))
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(22)
+  doc.setTextColor('#1f2933')
+  doc.text('Watermelon — Weekly report', MARGIN, cur.y)
+  cur.y += lh(22)
+  doc.setFont('helvetica', 'normal')
+  text(doc, cur, `${data.rangeLabel}  ·  ${data.weekKey}`, { size: 11, color: '#6b7280' })
+  gap(cur, 10)
+}
+
 function drawOverview(doc, cur, insights) {
   const data = pdfReportData(insights)
 
-  doc.setFontSize(20)
-  doc.setTextColor('#1f2933')
-  doc.text('Watermelon — Weekly report', MARGIN, cur.y)
-  cur.y += 18
-  doc.setFontSize(11)
-  doc.setTextColor('#6b7280')
-  doc.text(`${data.rangeLabel}  ·  ${data.weekKey}`, MARGIN, cur.y)
-  cur.y += 26
-
+  // Focus-rate hero: big number + label baseline-aligned, then the sentence.
+  reserve(doc, cur, lh(28))
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(28)
   doc.setTextColor('#4CAF82')
-  doc.setFontSize(30)
   doc.text(`${data.focusRate}%`, MARGIN, cur.y)
+  const pctWidth = doc.getTextWidth(`${data.focusRate}%`)
+  doc.setFont('helvetica', 'normal')
   doc.setFontSize(11)
   doc.setTextColor('#6b7280')
-  doc.text('focus rate', MARGIN + 64, cur.y)
-  cur.y += 22
-  line(doc, cur, data.sentence)
+  doc.text('focus rate', MARGIN + pctWidth + 10, cur.y)
+  cur.y += lh(28)
+  gap(cur, 2)
+  text(doc, cur, data.sentence, { size: 11 })
 
   heading(doc, cur, 'Time breakdown')
   for (const c of data.categories) {
-    ensure(doc, cur, 16)
-    doc.setFillColor(c.color)
-    doc.rect(MARGIN, cur.y - 8, 10, 10, 'F')
-    doc.setFontSize(10)
-    doc.setTextColor('#1f2933')
-    doc.text(c.label, MARGIN + 18, cur.y)
-    doc.setTextColor('#6b7280')
-    doc.text(`${formatDuration(c.minutes)}  ·  ${c.pct}%`, MARGIN + 230, cur.y)
-    cur.y += 16
+    swatchRow(doc, cur, c.color, c.label, `${formatDuration(c.minutes)}  ·  ${c.pct}%`)
   }
 
   heading(doc, cur, 'Per-day breakdown')
+  const barX = MARGIN + 90
+  const barMax = WIDTH - 90
   for (const d of data.perDay) {
-    ensure(doc, cur, 16)
+    const rowH = 18
+    reserve(doc, cur, rowH)
     const total = CATEGORIES.reduce((a, k) => a + (d.categories[k] || 0), 0) || 1
     doc.setFontSize(9)
     doc.setTextColor('#6b7280')
-    doc.text(d.weekday, MARGIN, cur.y + 8)
-    let x = MARGIN + 90
+    doc.text(d.weekday, MARGIN, cur.y) // baseline aligned with the bar
+    let x = barX
     for (const k of CATEGORIES) {
-      const w = ((d.categories[k] || 0) / total) * 360
+      const w = ((d.categories[k] || 0) / total) * barMax
       if (w <= 0) continue
       doc.setFillColor(CATEGORY_COLORS[k])
-      doc.rect(x, cur.y, w, 10, 'F')
+      doc.rect(x, cur.y - 8, w, 9, 'F')
       x += w
     }
-    cur.y += 16
+    cur.y += rowH
   }
-  line(doc, cur, `Best focus window: ${data.bestWindow}`)
+  gap(cur, 4)
+  text(doc, cur, `Best focus window: ${data.bestWindow}`, { size: 10, color: '#6b7280' })
 }
 
 // --- Public API -----------------------------------------------------------
@@ -242,14 +291,17 @@ export function buildWeeklyPdf(payload) {
   const { insights } = payload
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const cur = makeCursor()
+  const data = pdfReportData(insights)
 
+  drawHeader(doc, cur, data)
   drawOverview(doc, cur, insights)
   for (const section of reportSections(payload)) {
     heading(doc, cur, section.title)
-    for (const ln of section.lines) line(doc, cur, ln)
+    for (const ln of section.lines) text(doc, cur, ln, { size: 10 })
   }
 
-  return { doc, filename: weekPdfFilename(pdfReportData(insights).weekKey) }
+  stampFooter(doc, data.weekKey)
+  return { doc, filename: data.filename }
 }
 
 export function exportWeeklyPdf(payload) {
