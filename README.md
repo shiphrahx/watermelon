@@ -9,23 +9,20 @@
 ![Charts](https://img.shields.io/badge/Recharts-yes-9B8EC4)
 ![Tests](https://img.shields.io/badge/tests-337%20passing-1D9E75)
 
-Watermelon dead now. 🪦 Fire go out. 🍳💀
+Watermelon dead now. 🪦
 
 </div>
 
 ---
 
-## 🪦 WHY WATERMELON DEAD
+## 🪦 WHY DEAD
 
-Me build Watermelon to count deep focus time. Me read calendar — that part work fine. 📅✅
+Watermelon was built to count deep focus time. While the calendar can be read fine, to calculate proper focus time I need to analyse Teams and Slack usage (that was the whole point).
+But to look at Teams usage, Microsoft say **NO**. 🚫
 
-But to look at Teams usage, big Microsoft say **NO**. 🚫
+No Teams data = no real productivity number. So Watermelon cannot do the one thing it was for.
 
-Me not save data. Me not keep message words. No matter to Microsoft. To link one user Teams account, Microsoft want **ADMIN of whole company** say yes first. One person cannot say yes for own account. No admin = no Teams data.
-
-No Teams data = no real productivity number. So Watermelon cannot do the one thing it for.
-
-So... Watermelon dead. ⚰️ Me sad. Good idea, big wall. 🧱
+So... Watermelon's dead. ⚰️ Me sad. Good idea, big wall. 🧱
 
 ---
 
