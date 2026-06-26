@@ -16,14 +16,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      # Use `npm install` rather than `npm ci`: some transitive tooling pulls
-      # platform-specific optional deps (e.g. esbuild binaries) that a lockfile
-      # generated on another OS can't fully capture, which makes `npm ci` fail
-      # on the Linux runner.
+      # Resolve dependencies fresh for the Linux runner. Some tooling (vitest's
+      # rolldown, esbuild) ships platform-specific native bindings as optional
+      # deps; a lockfile generated on another OS pins them away and breaks both
+      # `npm ci` and a lockfile-constrained install. Removing the lockfile lets
+      # npm pick the correct Linux binaries.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: rm -f package-lock.json && npm install --no-audit --no-fund
 
       - name: Run tests
         run: npm test
