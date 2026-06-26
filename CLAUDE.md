@@ -69,10 +69,26 @@ cd cloudflare && npx wrangler deploy
   block), `analysis/focus.js` (block-size distribution, AM/PM split, consistency,
   longest block), `analysis/messaging.js` (volume by hour, meeting multitasking,
   context switching, quietest hour, response pattern, Teams/Slack split).
-- Dashboard is four tabs (`components/tabs/*`): Overview, Meetings, Focus,
-  Messaging. Each tab computes its analytics from the shared report `days` via
-  `useMemo`. The active tab is stored in the URL (`?tab=`) so it survives date
-  changes and round-trips to the day view (`/day/:dateKey?tab=`).
+- Dashboard is five tabs (`components/tabs/*`): Overview, Meetings, Focus,
+  Messaging, Trends. Each tab computes its analytics from the shared report
+  `days` via `useMemo` (Trends reads stored history). The active tab is stored
+  in the URL (`?tab=`) so it survives date changes and round-trips to the day
+  view (`/day/:dateKey?tab=`).
+- History & cross-week features:
+  - `src/storage/history.js` — per-ISO-week aggregated summaries in localStorage
+    (backend-swappable); auto-persisted by the dashboard hook. Only aggregates,
+    never raw content. `src/analysis/weekSummary.js` builds the stored shape.
+  - `src/mock/seedHistory.js` — seeds deterministic multi-week history in mock
+    mode (lazy-loaded from `App`).
+  - `src/analysis/trends.js` (Trends tab), `goal.js` (weekly focus goal +
+    pace), `benchmark.js` (self-ranking), `focusDebt.js` (low-focus streak),
+    `recurring.js` (recurring-meeting audit), and `declineCandidates` in
+    `messaging.js`.
+  - `src/storage/corrections.js` — manual day-view block reclassifications,
+    applied centrally in `loadReport` so day AND week totals respect them.
+  - `src/export/weeklyPdf.js` — client-side weekly PDF (jsPDF, lazy-loaded).
+  - Privacy: `PrivacyNotice` (one-time note), Settings Privacy section with
+    scope disclosure, and `storage/erase.js` (disconnect + erase everything).
 - `src/utils/ranges.js` — week presets (this/last/last-2), week+day navigation,
   previous-week comparison, custom-range clamping (max 31 days).
 - `src/utils/segments.js` — merges consecutive same-category blocks into the
