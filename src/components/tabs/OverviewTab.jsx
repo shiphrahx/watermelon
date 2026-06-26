@@ -57,8 +57,12 @@ export default function OverviewTab({ insights, trends, days, workingStart, work
   async function handleExport() {
     try {
       // Lazy-load jsPDF so it stays out of the main bundle.
-      const { exportWeeklyPdf } = await import('../../export/weeklyPdf.js')
-      exportWeeklyPdf(insights)
+      const [{ exportWeeklyPdf }, { getRecentWeeks }] = await Promise.all([
+        import('../../export/weeklyPdf.js'),
+        import('../../storage/history.js'),
+      ])
+      // Export the full report across all tabs, not just Overview.
+      exportWeeklyPdf({ insights, days, workingStart, workingEnd, weeks: getRecentWeeks(12) })
     } catch (err) {
       console.error(err)
       alert('Could not generate the PDF. Please try again.')

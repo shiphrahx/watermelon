@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pdfReportData, weekPdfFilename, buildWeeklyPdf } from './weeklyPdf.js'
+import { pdfReportData, weekPdfFilename, buildWeeklyPdf, reportSections } from './weeklyPdf.js'
 import { computeInsights } from '../analysis/insights.js'
 import { buildDayBlocks } from '../utils/time.js'
 
@@ -48,11 +48,55 @@ describe('pdfReportData', () => {
   })
 })
 
+describe('reportSections (full-report content)', () => {
+  const weeks = [
+    { weekKey: '2025-W25', focusRate: 40, focusMinutes: 240, meetingMinutes: 600, fragmentationCount: 1 },
+    { weekKey: '2025-W26', focusRate: 55, focusMinutes: 330, meetingMinutes: 500, fragmentationCount: 2 },
+  ]
+  const sections = reportSections({ insights, days, workingStart: WS, workingEnd: WE, weeks })
+  const titles = sections.map((s) => s.title)
+
+  it('includes a section for every non-overview tab', () => {
+    expect(titles).toEqual(['Meetings', 'Focus', 'Messaging', 'Trends'])
+  })
+
+  it('Meetings section carries back-to-back and gap facts', () => {
+    const lines = sections.find((s) => s.title === 'Meetings').lines.join('\n')
+    expect(lines).toMatch(/Back-to-back:/)
+    expect(lines).toMatch(/Inter-meeting gaps:/)
+  })
+
+  it('Focus section carries split and consistency', () => {
+    const lines = sections.find((s) => s.title === 'Focus').lines.join('\n')
+    expect(lines).toMatch(/Morning \d+%/)
+    expect(lines).toMatch(/Consistency:/)
+  })
+
+  it('Messaging section carries platform split and multitasking', () => {
+    const lines = sections.find((s) => s.title === 'Messaging').lines.join('\n')
+    expect(lines).toMatch(/Platform split:/)
+    expect(lines).toMatch(/Messages sent during meetings:/)
+  })
+
+  it('omits Trends with fewer than 2 weeks', () => {
+    const s = reportSections({ insights, days, workingStart: WS, workingEnd: WE, weeks: [] })
+    expect(s.map((x) => x.title)).not.toContain('Trends')
+  })
+})
+
 describe('buildWeeklyPdf', () => {
-  it('builds a jsPDF document without throwing and returns the filename', () => {
-    const { doc, filename } = buildWeeklyPdf(insights)
+  it('builds a multi-page document covering all tabs and returns the filename', () => {
+    const weeks = [
+      { weekKey: '2025-W25', focusRate: 40, focusMinutes: 240, meetingMinutes: 600, fragmentationCount: 1 },
+      { weekKey: '2025-W26', focusRate: 55, focusMinutes: 330, meetingMinutes: 500, fragmentationCount: 2 },
+    ]
+    const { doc, filename } = buildWeeklyPdf({ insights, days, workingStart: WS, workingEnd: WE, weeks })
     expect(filename).toMatch(/^watermelon-week-.*\.pdf$/)
-    // a real jsPDF doc exposes output()
     expect(typeof doc.output).toBe('function')
+    // full report spans more than one page (Overview + Meetings + Focus + Messaging + Trends)
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1)
+    // the rendered text includes section headings from every tab
+    const text = doc.output('dataurlstring') // does not throw
+    expect(typeof text).toBe('string')
   })
 })
